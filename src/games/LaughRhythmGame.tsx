@@ -122,12 +122,16 @@ export function LaughRhythmGame({ post, onComplete }: GameProps) {
   }
 
   async function startMic() {
+    // Én økt om gangen: multi-touch eller raske trykk skal aldri gi
+    // foreldreløse mikrofonstrømmer som fortsetter etter slipp.
+    if (holdingRef.current) return;
     holdingRef.current = true;
     setMicError(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Slapp taket før tillatelsen kom? Da stopper vi med en gang.
-      if (!holdingRef.current) {
+      // Slapp taket før tillatelsen kom, eller en annen økt eier alt
+      // allerede? Da stopper vi denne strømmen med en gang.
+      if (!holdingRef.current || streamRef.current) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }

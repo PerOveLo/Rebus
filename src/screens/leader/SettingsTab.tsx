@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameConfig } from '../../config/gameConfig';
+import { gameConfig, isValidCode } from '../../config/gameConfig';
 import { defaultLeaderState, leaderStore, teamStore, uid } from '../../services/storage';
 import type { LeaderState, TeamLinkPayload } from '../../types';
 
@@ -11,6 +11,10 @@ export function SettingsTab() {
   const [jsonText, setJsonText] = useState('');
   const [jsonMsg, setJsonMsg] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  // Kodene holdes i lokale utkast og lagres først når de er komplette
+  // (4 siffer) – ellers kan en halvskrevet PIN låse spillleder ute.
+  const [finalDraft, setFinalDraft] = useState(state.settings.finalCode);
+  const [pinDraft, setPinDraft] = useState(state.settings.pin);
 
   function setSetting<K extends keyof LeaderState['settings']>(key: K, value: LeaderState['settings'][K]) {
     leaderStore.update((s) => ({ ...s, settings: { ...s.settings, [key]: value } }));
@@ -48,7 +52,9 @@ export function SettingsTab() {
         members: [{ id: uid(), name: 'Spillleder', isAdult: true }],
       },
       order: [...state.settings.enabledPosts],
-      finalCode: state.settings.finalCode,
+      finalCode: isValidCode(state.settings.finalCode)
+        ? state.settings.finalCode
+        : gameConfig.defaultFinalCode,
       mapOverrides: Object.keys(state.mapOverrides).length > 0 ? state.mapOverrides : undefined,
     };
     teamStore.set({
@@ -74,7 +80,19 @@ export function SettingsTab() {
     try {
       const parsed = JSON.parse(jsonText) as LeaderState;
       if (!parsed.settings || !Array.isArray(parsed.participants)) throw new Error('ugyldig');
-      leaderStore.set({ ...defaultLeaderState(), ...parsed, settings: { ...defaultLeaderState().settings, ...parsed.settings } });
+      const defaults = defaultLeaderState();
+      const merged = { ...defaults, ...parsed, settings: { ...defaults.settings, ...parsed.settings } };
+      // Saner ugyldige verdier så importen aldri kan gi hvit skjerm.
+      const validNumbers = new Set(gameConfig.posts.map((p) => p.number));
+      const enabled = Array.isArray(merged.settings.enabledPosts)
+        ? merged.settings.enabledPosts.filter((n): n is number => typeof n === 'number' && validNumbers.has(n))
+        : defaults.settings.enabledPosts;
+      merged.settings.enabledPosts = (enabled.includes(15) ? enabled : [...enabled, 15]).sort((a, b) => a - b);
+      if (!isValidCode(merged.settings.finalCode)) merged.settings.finalCode = defaults.settings.finalCode;
+      if (!isValidCode(merged.settings.pin)) merged.settings.pin = defaults.settings.pin;
+      leaderStore.set(merged);
+      setFinalDraft(merged.settings.finalCode);
+      setPinDraft(merged.settings.pin);
       setJsonMsg('✅ Oppsettet er lastet inn!');
     } catch {
       setJsonMsg('Det der lignet ikke på et gyldig oppsett. Sjekk teksten og prøv igjen.');
@@ -84,6 +102,9 @@ export function SettingsTab() {
   function resetAll() {
     leaderStore.reset();
     teamStore.set(null);
+    const defaults = defaultLeaderState();
+    setFinalDraft(defaults.settings.finalCode);
+    setPinDraft(defaults.settings.pin);
     setConfirmReset(false);
   }
 
@@ -97,8 +118,12 @@ export function SettingsTab() {
           type="tel"
           inputMode="numeric"
           maxLength={4}
-          value={state.settings.finalCode}
-          onChange={(e) => setSetting('finalCode', e.target.value.replace(/\D/g, ''))}
+          value={finalDraft}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, '');
+            setFinalDraft(v);
+            if (v.length === 4) setSetting('finalCode', v);
+          }}
         />
         <label className="small" htmlFor="leaderpin"><strong>Spilllederkode (4 siffer)</strong></label>
         <input
@@ -106,10 +131,16 @@ export function SettingsTab() {
           type="tel"
           inputMode="numeric"
           maxLength={4}
-          value={state.settings.pin}
-          onChange={(e) => setSetting('pin', e.target.value.replace(/\D/g, ''))}
+          value={pinDraft}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, '');
+            setPinDraft(v);
+            if (v.length === 4) setSetting('pin', v);
+          }}
         />
-        <p className="small muted">Kodene lagres bare lokalt på denne telefonen.</p>
+        <p className="small muted">
+          Kodene lagres når alle fire sifrene er tastet – og bare lokalt på denne telefonen.
+        </p>
       </div>
 
       <div className="card stack">

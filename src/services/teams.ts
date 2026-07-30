@@ -1,4 +1,4 @@
-import { gameConfig } from '../config/gameConfig';
+import { gameConfig, isValidCode } from '../config/gameConfig';
 import { uid } from './storage';
 import type { LeaderState, MapPos, Participant, Team, TeamLinkPayload } from '../types';
 
@@ -77,7 +77,9 @@ export function buildTeamLink(
     eventName: gameConfig.eventName,
     team,
     order: buildPostOrder(state.settings.enabledPosts, teamIndex, state.settings.rotateStarts),
-    finalCode: state.settings.finalCode,
+    finalCode: isValidCode(state.settings.finalCode)
+      ? state.settings.finalCode
+      : gameConfig.defaultFinalCode,
     mapOverrides: Object.keys(overrides).length > 0 ? overrides : undefined,
   };
 }

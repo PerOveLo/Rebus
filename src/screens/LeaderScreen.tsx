@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { gameConfig, isValidCode } from '../config/gameConfig';
 import { leaderStore } from '../services/storage';
 import { ParticipantsTab } from './leader/ParticipantsTab';
 import { TeamsTab } from './leader/TeamsTab';
@@ -46,7 +47,12 @@ export function LeaderScreen() {
               setPinEntry(v);
               setPinError(false);
               if (v.length === 4) {
-                if (v === state.settings.pin) setUnlocked(true);
+                // Skulle en ugyldig PIN ha sneket seg inn i lagringen,
+                // gjelder standardkoden – spillleder skal aldri låses ute.
+                const effectivePin = isValidCode(state.settings.pin)
+                  ? state.settings.pin
+                  : gameConfig.defaultLeaderPin;
+                if (v === effectivePin) setUnlocked(true);
                 else setPinError(true);
               }
             }}

@@ -25,7 +25,7 @@ const ZONES: Record<string, Zone> = {
   bathtub: { hit: { x: 190, y: 28, w: 112, h: 66 }, ring: { cx: 246, cy: 56, rx: 58, ry: 30 } },
   socket: { hit: { x: 298, y: 124, w: 48, h: 50 }, ring: { cx: 322, cy: 151, rx: 26, ry: 26 } },
   window: { hit: { x: 108, y: 72, w: 90, h: 92 }, ring: { cx: 153, cy: 117, rx: 47, ry: 47 } },
-  trim: { hit: { x: 106, y: 168, w: 116, h: 42 }, ring: { cx: 162, cy: 190, rx: 60, ry: 18 } },
+  trim: { hit: { x: 106, y: 168, w: 180, h: 42 }, ring: { cx: 196, cy: 190, rx: 94, ry: 18 } },
 };
 
 const MISS_REPLIES = [

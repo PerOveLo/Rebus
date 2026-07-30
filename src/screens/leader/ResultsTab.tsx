@@ -19,16 +19,21 @@ export function ResultsTab() {
   const [manualScore, setManualScore] = useState('');
 
   function addResult(result: TeamResultPayload) {
+    // Dedup både på teamId og lagnavn, slik at manuell registrering og
+    // QR-skann av samme lag ikke teller dobbelt.
+    const name = result.teamName.trim().toLowerCase();
     leaderStore.update((s) => ({
       ...s,
       importedResults: [
-        ...s.importedResults.filter((r) => r.teamId !== result.teamId),
+        ...s.importedResults.filter(
+          (r) => r.teamId !== result.teamId && r.teamName.trim().toLowerCase() !== name,
+        ),
         result,
       ],
     }));
   }
 
-  function handleScan(text: string) {
+  function handleScan(text: string): boolean {
     // QR-en kan inneholde hele lenken eller bare datadelen.
     const data = text.includes('#/') ? text.split('/').pop() ?? text : text;
     const result = decodeResult(data);
@@ -36,9 +41,10 @@ export function ResultsTab() {
       addResult(result);
       setScanMsg(`✅ ${result.teamName}: ${result.total} poeng registrert!`);
       setScanning(false);
-    } else {
-      setScanMsg('Fant en QR-kode, men den var ikke et lagresultat. Prøv igjen.');
+      return true;
     }
+    setScanMsg('Fant en QR-kode, men den var ikke et lagresultat. Prøv igjen.');
+    return false;
   }
 
   function addManual() {

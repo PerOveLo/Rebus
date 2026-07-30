@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameConfig, getPost } from '../config/gameConfig';
+import { findPost, gameConfig, getPost } from '../config/gameConfig';
 import { MapView, directionDeg, distanceLabel } from '../components/MapView';
 import { teamStore } from '../services/storage';
 import { totalScore } from '../services/scoring';
@@ -42,11 +42,19 @@ export function PlayScreen() {
   }
 
   const completed = order.filter((n) => progress.results[n]);
-  const currentNum = order[progress.currentOrderIndex];
-  const prevNum =
-    progress.currentOrderIndex > 0 ? order[progress.currentOrderIndex - 1] : undefined;
+  const safeIndex = Math.min(Math.max(0, progress.currentOrderIndex), order.length - 1);
+  const currentNum = order[safeIndex];
+  const prevNum = safeIndex > 0 ? order[safeIndex - 1] : undefined;
 
-  const currentPost = getPost(currentNum);
+  const currentPost = currentNum != null ? findPost(currentNum) : undefined;
+  if (!currentPost) {
+    return (
+      <div className="screen center stack">
+        <p>Her gikk noe i surr med ruta. Be spillleder om en ny laglenke.</p>
+        <button className="btn" onClick={() => navigate('/')}>Til forsiden</button>
+      </div>
+    );
+  }
   const from = prevNum != null ? positions[prevNum] : positions[currentNum];
   const to = positions[currentNum];
   const deg = directionDeg(from, to);

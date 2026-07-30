@@ -490,7 +490,7 @@ export const gameConfig = {
       adultBonus:
         'Velg de to dyrene som ville vært vanskeligst å få med gjennom Flekkerøytunnelen – og begrunn svaret.',
       adultBonusJudgeOptions: ['God logistikk', 'Glemte sjiraffhøyden', 'Ville tatt bussen'],
-      hint: 'I minnespillet: begynn i ett hjørne og jobb deg rundt. I båten: de største dyrene først!',
+      hint: 'I minnespillet: begynn i ett hjørne og jobb deg rundt. I båten: de minste dyrene gir plass til flest par – de aller største må nok bli igjen på brygga!',
       funFact:
         'Noah var tidlig ute med god logistikk: to og to, god planlegging og plass til alle. Det er fortsatt oppskriften.',
       islandSymbol: { id: 'regnbue', name: 'Regnbuebiten', emoji: '🌈' },
@@ -614,4 +614,12 @@ export function getPost(num: number): PostConfig {
   const post = gameConfig.posts.find((p) => p.number === num);
   if (!post) throw new Error(`Ukjent post: ${num}`);
   return post;
+}
+
+export function findPost(num: number): PostConfig | undefined {
+  return gameConfig.posts.find((p) => p.number === num);
+}
+
+export function isValidCode(code: unknown): code is string {
+  return typeof code === 'string' && /^\d{4}$/.test(code);
 }

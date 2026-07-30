@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { gameConfig, getPost } from '../config/gameConfig';
+import { gameConfig, getPost, isValidCode } from '../config/gameConfig';
 import { teamStore } from '../services/storage';
 import { Confetti } from '../components/Confetti';
 import type { GameProps } from './types';
@@ -9,7 +9,8 @@ import type { GameProps } from './types';
 // spillleder, standard i gameConfig.defaultFinalCode).
 export function FinaleCodeGame({ post, onComplete }: GameProps) {
   const progress = teamStore.useStore();
-  const code = progress?.setup.finalCode ?? gameConfig.defaultFinalCode;
+  const stored = progress?.setup.finalCode;
+  const code = isValidCode(stored) ? stored : gameConfig.defaultFinalCode;
   const [entry, setEntry] = useState('');
   const [wrongCount, setWrongCount] = useState(0);
   const [shake, setShake] = useState(false);
@@ -23,7 +24,9 @@ export function FinaleCodeGame({ post, onComplete }: GameProps) {
   const collected = progress ? new Set(progress.collectedSymbols) : new Set<string>();
 
   function press(d: string) {
-    if (solved) return;
+    // Ignorer trykk mens et fullt (feil) forsøk vises – ellers telles
+    // samme feilkode flere ganger i shake-vinduet.
+    if (solved || entry.length >= code.length) return;
     const next = (entry + d).slice(0, code.length);
     setEntry(next);
     if (next.length === code.length) {

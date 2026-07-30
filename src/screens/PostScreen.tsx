@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getPost } from '../config/gameConfig';
+import { findPost } from '../config/gameConfig';
 import { games } from '../games';
 import type { GameResult } from '../games/types';
 import { teamStore } from '../services/storage';
@@ -43,16 +43,26 @@ export function PostScreen() {
     }
   }, [progress, postNumber]);
 
-  if (!progress || Number.isNaN(postNumber)) {
+  // Stabil onComplete-identitet: minispillene rydder fullførings-timere i
+  // effekt-cleanup når prop-identiteten endres, så identiteten må aldri
+  // endres midt i et spill. Logikken leses fersk via ref-en.
+  const handleGameDoneRef = useRef<(result: GameResult) => void>(() => {});
+  const stableGameDone = useCallback((result: GameResult) => {
+    handleGameDoneRef.current(result);
+  }, []);
+
+  const maybePost = Number.isNaN(postNumber) ? undefined : findPost(postNumber);
+
+  if (!progress || !maybePost) {
     return (
       <div className="screen center">
-        <p>Fant ikke laget. Gå til forsiden for å starte.</p>
+        <p>Fant ikke denne posten. Gå til forsiden for å starte.</p>
         <button className="btn" onClick={() => navigate('/')}>Til forsiden</button>
       </div>
     );
   }
 
-  const post = getPost(postNumber);
+  const post = maybePost;
   const alreadyDone = Boolean(progress.results[postNumber]);
   const Game = games[post.gameType];
 
@@ -64,18 +74,18 @@ export function PostScreen() {
     );
   }
 
-  function handleGameDone(result: GameResult) {
-    const penalty = partial?.hintUsed ? post.points.hintPenalty : 0;
-    const mainScore = Math.max(0, Math.min(post.points.main, result.score) - penalty);
+  handleGameDoneRef.current = (result: GameResult) => {
     teamStore.update((p) => {
-      if (!p || !p.partial) return p;
+      if (!p || !p.partial || p.partial.postNumber !== postNumber) return p;
+      const penalty = p.partial.hintUsed ? post.points.hintPenalty : 0;
+      const mainScore = Math.max(0, Math.min(post.points.main, result.score) - penalty);
       return {
         ...p,
         creations: { ...p.creations, ...(result.creations ?? {}) },
         partial: { ...p.partial, stage: STAGE_TEAM, mainScore },
       };
     });
-  }
+  };
 
   function handleTeamDone(scoreRatio: number) {
     setPartial({ stage: STAGE_BONUS, teamScore: Math.round(post.points.team * scoreRatio) });
@@ -116,10 +126,18 @@ export function PostScreen() {
     teamStore.update((p) => {
       if (!p) return p;
       const idx = p.setup.order.indexOf(postNumber);
+      // Spol aldri bakover (tilbakeknapp til gammel post), og ikke kast
+      // delvis fremdrift som tilhører en annen post.
+      const nextIndex =
+        idx === -1
+          ? p.currentOrderIndex
+          : Math.max(p.currentOrderIndex, Math.min(idx + 1, p.setup.order.length - 1));
+      const keepPartial =
+        p.partial && p.partial.postNumber !== postNumber ? p.partial : undefined;
       return {
         ...p,
-        currentOrderIndex: Math.min(idx + 1, p.setup.order.length - 1),
-        partial: undefined,
+        currentOrderIndex: nextIndex,
+        partial: keepPartial,
       };
     });
     if (post.gameType === 'finale-code') {
@@ -135,6 +153,8 @@ export function PostScreen() {
   }
 
   const totalHere = (partial?.mainScore ?? 0) + (partial?.teamScore ?? 0);
+  const orderPos = progress.setup.order.indexOf(postNumber);
+  const bonusOptions = (post.data as { bonusOptions?: string[] } | undefined)?.bonusOptions;
 
   return (
     <div className="screen">
@@ -143,7 +163,7 @@ export function PostScreen() {
           🗺️ Kart
         </button>
         <span className="badge">
-          Post {post.number} av {progress.setup.order.length}
+          Etappe {orderPos >= 0 ? orderPos + 1 : '?'} av {progress.setup.order.length}
         </span>
       </div>
 
@@ -164,7 +184,7 @@ export function PostScreen() {
         <>
           {stage === STAGE_GAME && (
             <div className="card stack">
-              <Game post={post} onComplete={handleGameDone} />
+              <Game post={post} onComplete={stableGameDone} />
               <div className="center">
                 {!hintOpen ? (
                   <button className="btn btn-small btn-sun" onClick={useHint}>
@@ -195,6 +215,13 @@ export function PostScreen() {
             <div className="card stack pop-in">
               <h2>🧑‍⚖️ Voksenbonus – barna er dommere</h2>
               <p>{post.adultBonus}</p>
+              {bonusOptions && bonusOptions.length > 0 && (
+                <div className="card card-soft small stack" style={{ gap: 6 }}>
+                  {bonusOptions.map((s) => (
+                    <p key={s} style={{ margin: 0 }}>{s}</p>
+                  ))}
+                </div>
+              )}
               <p className="small muted">Barna velger dommen. Alle dommer gir poeng!</p>
               {post.adultBonusJudgeOptions.map((opt, i) => (
                 <button key={opt} className="btn btn-sun" onClick={() => handleBonusDone(i)}>

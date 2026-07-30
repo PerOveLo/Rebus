@@ -113,8 +113,9 @@ p { margin: 0 0 0.7em; }
 }
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.45; cursor: default; transform: none; }
-.btn-primary { background: var(--coral); }
-.btn-primary:active { background: var(--coral-dark); }
+/* Mørkere korall enn dekorfargen: hvit tekst trenger 4,5:1-kontrast */
+.btn-primary { background: var(--coral-dark); }
+.btn-primary:active { background: #c2331f; }
 .btn-big { width: 100%; font-size: 1.2rem; min-height: 60px; }
 .btn-ghost {
   background: transparent;
@@ -122,7 +123,7 @@ p { margin: 0 0 0.7em; }
   border: 2px solid var(--sea);
 }
 .btn-sun { background: var(--sun); color: var(--ink); }
-.btn-grass { background: var(--grass); }
+.btn-grass { background: #337428; }
 .btn-small { min-height: 40px; padding: 8px 14px; font-size: 0.92rem; border-radius: 12px; }
 
 input[type='text'],
@@ -302,7 +303,7 @@ input:focus, textarea:focus, select:focus {
   height: 42px;
   font-size: 1.1rem;
 }
-.map-pin-inactive .map-pin-dot { background: #9db4bf; }
+.map-pin-inactive .map-pin-dot { background: var(--ink-soft); }
 
 /* Konfetti */
 .confetti-piece {

@@ -1,4 +1,5 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
+import { gameConfig } from '../config/gameConfig';
 import type { TeamLinkPayload, TeamResultPayload } from '../types';
 
 // Laglenker og resultater deles som komprimerte strenger i URL/QR.
@@ -13,7 +14,17 @@ export function decodeTeamLink(data: string): TeamLinkPayload | null {
     const json = decompressFromEncodedURIComponent(data);
     if (!json) return null;
     const parsed = JSON.parse(json) as TeamLinkPayload;
-    if (parsed.v !== 1 || parsed.kind !== 'team' || !parsed.team?.id || !Array.isArray(parsed.order)) return null;
+    const validNumbers = new Set(gameConfig.posts.map((p) => p.number));
+    if (
+      parsed.v !== 1 ||
+      parsed.kind !== 'team' ||
+      !parsed.team?.id ||
+      !Array.isArray(parsed.order) ||
+      parsed.order.length === 0 ||
+      !parsed.order.every((n) => typeof n === 'number' && validNumbers.has(n))
+    ) {
+      return null;
+    }
     return parsed;
   } catch {
     return null;
