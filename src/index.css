@@ -1,0 +1,384 @@
+/* ==========================================================
+   Skylleviga Hagefest – designsystem
+   Norsk sommer, sørlandsøy, lett tegneseriepreg.
+   ========================================================== */
+
+:root {
+  --sea: #0e7490;
+  --sea-dark: #0b5666;
+  --sky: #38bdf8;
+  --sky-soft: #dbf1fd;
+  --grass: #3f8f33;
+  --coral: #f4553f;
+  --coral-dark: #d43a25;
+  --sun: #ffc94d;
+  --sun-soft: #ffe9b0;
+  --sand: #fff7e6;
+  --ink: #123044;
+  --ink-soft: #40606f;
+  --paper: #ffffff;
+  --ok: #2c8a43;
+  --shadow: 0 4px 14px rgba(18, 48, 68, 0.14);
+  --radius: 20px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(180deg, var(--sky-soft) 0%, var(--sand) 55%);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.45;
+  min-height: 100dvh;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3 {
+  line-height: 1.15;
+  margin: 0 0 0.4em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+h1 { font-size: 1.7rem; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.1rem; }
+p { margin: 0 0 0.7em; }
+
+.screen {
+  flex: 1;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card {
+  background: var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.card-soft {
+  background: var(--sun-soft);
+  box-shadow: none;
+}
+
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.spread { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.center { text-align: center; }
+.muted { color: var(--ink-soft); }
+.small { font-size: 0.88rem; }
+.big-emoji { font-size: 3rem; line-height: 1; }
+
+/* Knapper: store trykkflater, god kontrast i sollys */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 16px;
+  padding: 15px 20px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  min-height: 52px;
+  color: var(--paper);
+  background: var(--sea);
+  transition: transform 0.1s ease, filter 0.1s ease;
+  touch-action: manipulation;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.45; cursor: default; transform: none; }
+.btn-primary { background: var(--coral); }
+.btn-primary:active { background: var(--coral-dark); }
+.btn-big { width: 100%; font-size: 1.2rem; min-height: 60px; }
+.btn-ghost {
+  background: transparent;
+  color: var(--sea-dark);
+  border: 2px solid var(--sea);
+}
+.btn-sun { background: var(--sun); color: var(--ink); }
+.btn-grass { background: var(--grass); }
+.btn-small { min-height: 40px; padding: 8px 14px; font-size: 0.92rem; border-radius: 12px; }
+
+input[type='text'],
+input[type='number'],
+input[type='password'],
+input[type='tel'],
+textarea,
+select {
+  font-family: inherit;
+  font-size: 1.05rem;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 2px solid #c8dbe4;
+  background: var(--paper);
+  color: var(--ink);
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus {
+  outline: 3px solid var(--sky);
+  outline-offset: 1px;
+  border-color: var(--sea);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sky-soft);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+}
+.chip-btn { cursor: pointer; font-family: inherit; }
+.chip-active { border-color: var(--sea); background: var(--paper); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--sun);
+  color: var(--ink);
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.95rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 2px;
+}
+
+.progress-track {
+  background: rgba(18, 48, 68, 0.12);
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+}
+.progress-fill {
+  background: linear-gradient(90deg, var(--grass), var(--sun));
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+/* Animasjoner (slås av ved redusert bevegelse) */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.4); opacity: 0; }
+  80% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+@keyframes dash-move {
+  to { stroke-dashoffset: -20; }
+}
+@keyframes confetti-fall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0.7; }
+}
+@keyframes drive {
+  0% { transform: translateX(-120px); }
+  100% { transform: translateX(420px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 201, 77, 0.7)); }
+  50% { filter: drop-shadow(0 0 16px rgba(255, 201, 77, 1)); }
+}
+
+.floaty { animation: floaty 3s ease-in-out infinite; }
+.pop-in { animation: pop-in 0.45s ease both; }
+.wiggle { animation: wiggle 0.9s ease-in-out infinite; }
+.glow { animation: pulse-glow 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+}
+
+/* Kart */
+.map-frame {
+  position: relative;
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 6px solid var(--paper);
+  background: var(--sky-soft);
+}
+.map-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: saturate(0.85) brightness(1.02);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.map-placeholder {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 233, 176, 0.9), transparent 45%),
+    linear-gradient(180deg, #bfe8f7 0%, #8fd3a8 100%);
+  color: var(--ink);
+  text-align: center;
+  padding: 20px;
+}
+.map-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  touch-action: none;
+}
+.map-pin-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--paper);
+  background: var(--sea);
+  border: 3px solid var(--paper);
+  box-shadow: 0 2px 6px rgba(18, 48, 68, 0.4);
+}
+.map-pin-done .map-pin-dot { background: var(--grass); }
+.map-pin-next .map-pin-dot {
+  background: var(--coral);
+  width: 42px;
+  height: 42px;
+  font-size: 1.1rem;
+}
+.map-pin-inactive .map-pin-dot { background: #9db4bf; }
+
+/* Konfetti */
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  animation: confetti-fall linear both;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 48, 68, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  padding: 12px;
+}
+.modal {
+  background: var(--paper);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 20px;
+  animation: pop-in 0.25s ease both;
+}
+
+/* Diverse spillhjelpere */
+.tap-zone {
+  touch-action: manipulation;
+  user-select: none;
+}
+.option-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.option-grid-1 { grid-template-columns: 1fr; }
+.option-btn {
+  border: 3px solid #c8dbe4;
+  background: var(--paper);
+  border-radius: 16px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 56px;
+}
+.option-btn:active { transform: scale(0.97); }
+.option-selected { border-color: var(--sea); background: var(--sky-soft); }
+.option-correct { border-color: var(--ok); background: #e2f5e6; }
+.option-wrong { border-color: var(--coral); background: #ffe8e4; }
+
+.symbol-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--paper);
+  border-radius: 16px;
+  padding: 10px 6px;
+  box-shadow: var(--shadow);
+  font-size: 0.72rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.symbol-tile .big { font-size: 1.8rem; }
+.symbol-locked { opacity: 0.35; filter: grayscale(1); }
