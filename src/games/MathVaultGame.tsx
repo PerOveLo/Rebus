@@ -158,7 +158,12 @@ export function MathVaultGame({ post, onComplete }: GameProps) {
     <div className="stack">
       <div className="spread">
         {locks}
-        <button className="btn btn-ghost btn-small" onClick={backToLevels} disabled={locking}>
+        <button
+          className="btn btn-ghost btn-small"
+          style={{ minHeight: 48 }}
+          onClick={backToLevels}
+          disabled={locking}
+        >
           Bytt nivå 🔁
         </button>
       </div>
