@@ -60,7 +60,7 @@ export const gameConfig = {
     'Vi holder oss innenfor avtalt område.',
     'Vi ser opp fra telefonen når vi går der det kan komme biler.',
     'Spillet lagrer ikke posisjon, lyd eller bilder på en server.',
-    'Kamera, mikrofon og bevegelsessensor er alltid valgfrie.',
+    'Kamera, mikrofon, GPS og bevegelsessensor er alltid valgfrie.',
   ],
 
   oath:

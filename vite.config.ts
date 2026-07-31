@@ -27,6 +27,18 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,webmanifest}'],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         navigateFallback: undefined,
+        // Kartfliser caches så GPS-kartet tåler dårlig dekning underveis.
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/(server\.arcgisonline\.com|tile\.openstreetmap\.org)\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'kart-fliser',
+              expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],

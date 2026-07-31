@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameConfig } from '../config/gameConfig';
+import { activeConfig } from '../services/personalize';
 import { teamStore } from '../services/storage';
 
 // Sikkerhetssjekk før start – alle punkter må hukes av.
 export function SafetyScreen() {
   const navigate = useNavigate();
   const progress = teamStore.useStore();
-  const items = gameConfig.safetyChecklist;
+  const items = activeConfig().safetyChecklist;
   const [checked, setChecked] = useState<boolean[]>(() => items.map(() => false));
 
   if (!progress) {

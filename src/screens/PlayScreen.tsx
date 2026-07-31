@@ -1,17 +1,33 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { findPost, gameConfig, getPost } from '../config/gameConfig';
+import { gameConfig } from '../config/gameConfig';
+import { activeConfig, findActivePost, getActivePost } from '../services/personalize';
 import { MapView, directionDeg, distanceLabel } from '../components/MapView';
+import { GeoMap } from '../components/GeoMap';
 import { teamStore } from '../services/storage';
 import { totalScore } from '../services/scoring';
+import {
+  ARRIVAL_RADIUS_M,
+  DEFAULT_CENTER,
+  bearingDeg,
+  compassLabel,
+  haversineMeters,
+  metersLabel,
+} from '../services/geo';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import type { GeoPos } from '../types';
 
 // Lagets hovedskjerm: kartet, neste post og fremdrift.
+// Bruker GPS-kart når laglenken inneholder ekte posisjoner, ellers bildekartet.
 export function PlayScreen() {
   const navigate = useNavigate();
   const progress = teamStore.useStore();
   const reduced = useReducedMotion();
   const [symbolsOpen, setSymbolsOpen] = useState(false);
+  const [userPos, setUserPos] = useState<GeoPos | null>(null);
+  const [gpsOn, setGpsOn] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const watchIdRef = useRef<number | null>(null);
 
   const positions = useMemo(() => {
     const base: Record<number, { x: number; y: number }> = {};
@@ -32,6 +48,13 @@ export function PlayScreen() {
     if (allDone) navigate('/celebration');
   }, [allDone, navigate]);
 
+  // GPS er alltid valgfritt og kun lokalt. Rydd opp ved unmount.
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current != null) navigator.geolocation?.clearWatch(watchIdRef.current);
+    };
+  }, []);
+
   if (!progress) {
     return (
       <div className="screen center stack">
@@ -46,7 +69,7 @@ export function PlayScreen() {
   const currentNum = order[safeIndex];
   const prevNum = safeIndex > 0 ? order[safeIndex - 1] : undefined;
 
-  const currentPost = currentNum != null ? findPost(currentNum) : undefined;
+  const currentPost = currentNum != null ? findActivePost(currentNum) : undefined;
   if (!currentPost) {
     return (
       <div className="screen center stack">
@@ -55,12 +78,76 @@ export function PlayScreen() {
       </div>
     );
   }
-  const from = prevNum != null ? positions[prevNum] : positions[currentNum];
-  const to = positions[currentNum];
-  const deg = directionDeg(from, to);
-  const dist = prevNum != null ? distanceLabel(from, to) : gameConfig.map.distanceLabels.short;
 
   if (allDone) return null;
+
+  const geo = progress.setup.geo;
+  const geoMode = geo != null && geo[currentNum] != null;
+
+  function toggleGps() {
+    if (gpsOn) {
+      if (watchIdRef.current != null) navigator.geolocation?.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+      setGpsOn(false);
+      setUserPos(null);
+      return;
+    }
+    if (!('geolocation' in navigator)) {
+      setGpsError('Denne telefonen har ikke GPS tilgjengelig i nettleseren.');
+      return;
+    }
+    setGpsError(null);
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (p) => {
+        setGpsOn(true);
+        setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude });
+      },
+      () => {
+        setGpsError('Fikk ikke posisjon. Dere klarer dere fint med kartet!');
+        setGpsOn(false);
+      },
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 },
+    );
+  }
+
+  // Retning og avstand
+  let distanceText: string;
+  let arrow: { deg: number; label: string } | null = null;
+  let arrived = false;
+
+  if (geoMode && geo) {
+    const target = geo[currentNum];
+    const from = userPos ?? (prevNum != null ? geo[prevNum] : null);
+    if (from) {
+      const meters = haversineMeters(from, target);
+      const bearing = bearingDeg(from, target);
+      distanceText = `${metersLabel(meters)} mot ${compassLabel(bearing)}`;
+      arrow = { deg: bearing, label: compassLabel(bearing) };
+      arrived = userPos != null && haversineMeters(userPos, target) <= ARRIVAL_RADIUS_M;
+    } else {
+      distanceText = 'Følg kartet til første post';
+    }
+  } else {
+    const from = prevNum != null ? positions[prevNum] : positions[currentNum];
+    const to = positions[currentNum];
+    distanceText = `${prevNum != null ? distanceLabel(from, to) : activeConfig().map.distanceLabels.short} · Avstander er øy-omtrentlige, ikke målt med Sjur-meteren.`;
+    arrow = { deg: directionDeg(from, to) + 90, label: '' };
+  }
+
+  const geoPosts = geoMode && geo
+    ? order
+        .filter((n) => geo[n])
+        .map((n) => {
+          const p = getActivePost(n);
+          return {
+            number: n,
+            symbol: p.symbol,
+            pos: geo[n],
+            done: completed.includes(n),
+            isNext: n === currentNum,
+          };
+        })
+    : [];
 
   return (
     <div className="screen">
@@ -76,41 +163,67 @@ export function PlayScreen() {
         <div className="progress-fill" style={{ width: `${(completed.length / order.length) * 100}%` }} />
       </div>
 
-      <MapView
-        positions={positions}
-        visiblePosts={order}
-        completedPosts={completed}
-        currentPost={currentNum}
-        previousPost={prevNum}
-        onSelect={(n) => {
-          if (n === currentNum) navigate(`/post/${n}`);
-        }}
-      />
+      {geoMode && geo ? (
+        <>
+          <GeoMap
+            center={progress.setup.center ?? geo[currentNum] ?? DEFAULT_CENTER}
+            posts={geoPosts}
+            userPos={userPos}
+            routeFrom={userPos ?? (prevNum != null ? geo[prevNum] : null)}
+            onSelect={(n) => {
+              if (n === currentNum) navigate(`/post/${n}`);
+            }}
+          />
+          <button className={`btn btn-small ${gpsOn ? 'btn-grass' : 'btn-ghost'}`} onClick={toggleGps}>
+            {gpsOn ? '📍 GPS på (kun på denne telefonen)' : '📍 Vis hvor vi er (GPS, valgfritt)'}
+          </button>
+          {gpsError && <p className="small muted center">{gpsError}</p>}
+        </>
+      ) : (
+        <MapView
+          positions={positions}
+          visiblePosts={order}
+          completedPosts={completed}
+          currentPost={currentNum}
+          previousPost={prevNum}
+          onSelect={(n) => {
+            if (n === currentNum) navigate(`/post/${n}`);
+          }}
+        />
+      )}
 
       <div className="card stack">
         <div className="row">
-          <span
-            aria-hidden="true"
-            className={reduced ? '' : 'floaty'}
-            style={{
-              fontSize: '2rem',
-              display: 'inline-block',
-              transform: `rotate(${deg + 90}deg)`,
-            }}
-          >
-            ⬆️
-          </span>
+          {arrow && (
+            <span
+              aria-hidden="true"
+              className={reduced ? '' : 'floaty'}
+              style={{
+                fontSize: '2rem',
+                display: 'inline-block',
+                transform: `rotate(${arrow.deg}deg)`,
+              }}
+            >
+              ⬆️
+            </span>
+          )}
           <div>
             <h2 style={{ marginBottom: 2 }}>
               Neste: {currentPost.symbol} {currentPost.title}
             </h2>
-            <div className="small muted">
-              {dist} · Avstander er øy-omtrentlige, ikke målt med Sjur-meteren.
-            </div>
+            <div className="small muted">{distanceText}</div>
           </div>
         </div>
         <p style={{ fontStyle: 'italic' }}>«{currentPost.clue}»</p>
-        <button className="btn btn-primary btn-big" onClick={() => navigate(`/post/${currentNum}`)}>
+        {arrived && (
+          <p className="small center" style={{ color: 'var(--ok)', fontWeight: 700 }} aria-live="polite">
+            🎉 GPS-en mener dere er fremme!
+          </p>
+        )}
+        <button
+          className={`btn btn-primary btn-big ${arrived && !reduced ? 'wiggle' : ''}`}
+          onClick={() => navigate(`/post/${currentNum}`)}
+        >
           Vi er fremme! 🏁
         </button>
       </div>
@@ -121,7 +234,7 @@ export function PlayScreen() {
       {symbolsOpen && (
         <div className="row-wrap pop-in" style={{ justifyContent: 'center' }}>
           {order.map((n) => {
-            const p = getPost(n);
+            const p = getActivePost(n);
             const has = progress.collectedSymbols.includes(p.islandSymbol.id);
             return (
               <div key={n} className={has ? 'symbol-tile' : 'symbol-tile symbol-locked'} style={{ width: 76 }}>
