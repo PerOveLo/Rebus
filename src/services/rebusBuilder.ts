@@ -57,15 +57,20 @@ export function assembleRebus(
 
   const posts: PostConfig[] = generated.posts.map((g, i) => {
     const number = i + 1;
-    const mini = minis[i % minis.length];
+    const mini = minis[Math.floor(i / 2) % minis.length];
+    // Annenhver post: rent quizspørsmål eller rent minispill – da blir det
+    // én hovedutfordring per post i stedet for to.
+    const quizOnly = i % 2 === 0;
     return {
       id: `custom${number}`,
       number,
       title: g.title,
       symbol: g.emoji,
       clue: g.clue,
-      gameType: 'quiz-combo',
-      gameIntro: 'Først et spørsmål om dere – deretter et minispill!',
+      gameType: quizOnly ? 'quiz-combo' : mini.type,
+      gameIntro: quizOnly
+        ? 'Et spørsmål om dere – diskuter i laget!'
+        : 'Et minispill – alle kan hjelpe!',
       physicalTask: g.physicalTask,
       adultBonus: g.adultBonus,
       adultBonusJudgeOptions: g.judgeOptions.slice(0, 3),
@@ -79,7 +84,7 @@ export function assembleRebus(
       categories: [...CUSTOM_CATEGORIES[i % CUSTOM_CATEGORIES.length]] as Category[],
       mapPos: defaultMapPos(i, regularCount + 1),
       points: { main: 60, team: 20, bonus: 20, hintPenalty: 10 },
-      data: { question: g.question, mini: mini.type, miniData: mini.data },
+      data: quizOnly ? { question: g.question, mini: null } : mini.data,
     };
   });
 
@@ -171,6 +176,8 @@ export async function generateWithClaude(
 
   const prompt = `Du skal lage innholdet til en rebusløype for en privat fest. Lag NØYAKTIG ${regular} poster pluss en introhistorie, alt på norsk bokmål, i en varm, leken og familievennlig tone (barn 4-14 år og voksne spiller sammen i lag). Humoren skal være kjærlig – aldri på bekostning av enkeltpersoner.
 
+VIKTIG OM STIL: Bruk svarene under som SPRINGBRETT, ikke fasit. Søk gjerne på nettet etter stedet og temaene (lokalhistorie, geografi, rare fakta om maten/hobbyene) og flett inn ekte, overraskende kunnskap. Vær kreativ, uventet og passe sprø – bygg små absurde univers rundt gjengen (hemmelige byråer, konspirasjoner om grillmat, verdensmesterskap ingen har hørt om). Voksenbonusene kan være VILLE: improvisasjonsteater, dramatiske opplesninger, absurde debatter – fortsatt familievennlige. Ikke lag alle spørsmål som «hva svarte spillleder» – lag også kunnskapsspørsmål om stedet/temaene der de morsomme gale svarene nesten er sanne.
+
 Om gjengen (bruk dette aktivt i ALT innholdet – spørsmål, vitser, oppgaver):
 - Sted: ${answers.place}
 - Gjengen kalles: ${answers.groupName}
@@ -194,24 +201,28 @@ Per post:
 - "symbolName": navn på symbolet laget samler (knyttet til gjengen)
 - "symbolEmoji": én emoji for symbolet
 
-Varier spørsmålene godt (hvem-er-hvem, vaner, stedet, maten, den interne vitsen). "story": en introhistorie på 3-5 setninger som gjør gjengen til helter i sin egen fortelling.`;
+Varier spørsmålene godt: hvem-er-hvem, vaner, stedet, maten – men også ekte fakta du finner om stedet og temaene (med de gale svarene som nesten-sannheter). "story": en introhistorie på 3-5 setninger som gjør gjengen til helter i et litt sprøtt univers.`;
 
-  const params = {
+  type Loose = { stop_reason: string | null; content: { type: string; text?: string }[] };
+  const baseParams = {
     model: 'claude-opus-5',
     max_tokens: 16000,
     betas: ['server-side-fallback-2026-07-01'],
     // Skulle sikkerhetsklassifisererne avvise et kall, prøves automatisk
     // en annen Claude-modell server-side.
     fallbacks: 'default',
+    // Claude kan søke opp stedet og temaene og flette inn ekte lokal kunnskap.
+    tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5 }],
     output_config: { format: { type: 'json_schema', schema: OUTPUT_SCHEMA } },
-    messages: [{ role: 'user', content: prompt }],
   };
   // SDK-typene henger litt etter beta-feltene (fallbacks) – responsformen
-  // leses derfor strukturelt.
-  const response = (await client.beta.messages.create(params as never)) as unknown as {
-    stop_reason: string | null;
-    content: { type: string; text?: string }[];
-  };
+  // leses derfor strukturelt. Nettsøk kan gi pause_turn; da fortsetter vi.
+  const messages: unknown[] = [{ role: 'user', content: prompt }];
+  let response = (await client.beta.messages.create({ ...baseParams, messages } as never)) as unknown as Loose;
+  for (let i = 0; i < 3 && response.stop_reason === 'pause_turn'; i += 1) {
+    messages.push({ role: 'assistant', content: response.content });
+    response = (await client.beta.messages.create({ ...baseParams, messages } as never)) as unknown as Loose;
+  }
 
   if (response.stop_reason === 'refusal') {
     throw new Error('Claude takket nei til denne forespørselen. Juster svarene og prøv igjen.');

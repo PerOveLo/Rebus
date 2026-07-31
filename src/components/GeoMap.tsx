@@ -20,6 +20,7 @@ export interface GeoMapProps {
   editable?: boolean;
   onMove?: (postNumber: number, pos: GeoPos) => void;
   onSelect?: (postNumber: number) => void;
+  onViewChange?: (center: GeoPos) => void; // kalles når spillleder panorerer/zoomer
   height?: number;
 }
 
@@ -33,9 +34,12 @@ export function GeoMap({
   editable = false,
   onMove,
   onSelect,
+  onViewChange,
   height = 380,
 }: GeoMapProps) {
   const divRef = useRef<HTMLDivElement>(null);
+  const onViewChangeRef = useRef(onViewChange);
+  onViewChangeRef.current = onViewChange;
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
   const fittedRef = useRef(false);
@@ -59,6 +63,11 @@ export function GeoMap({
 
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
+
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      onViewChangeRef.current?.({ lat: Number(c.lat.toFixed(6)), lng: Number(c.lng.toFixed(6)) });
+    });
 
     return () => {
       map.remove();

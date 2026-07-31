@@ -15,9 +15,45 @@ import type { GeoPos, MapPos } from '../../types';
 // Kartfanen har to moduser:
 // - Bildekart: eget kartbilde (public/skylleviga-kart.jpg) med prosentkoordinater.
 // - GPS-kart: ekte kart med GPS-posisjoner, adressesøk og dra-og-slipp.
+const CUSTOM_MAP_KEY = 'skylleviga:custom-map';
+
+// Skaler ned og lagre opplastet kartbilde lokalt (maks ~1600px, JPEG).
+async function fileToDataUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.82);
+}
+
 export function MapTab() {
   const state = leaderStore.useStore();
   const [editing, setEditing] = useState(false);
+  const [hasCustomMap, setHasCustomMap] = useState(() => localStorage.getItem(CUSTOM_MAP_KEY) != null);
+  const [mapVersion, setMapVersion] = useState(0);
+  const [viewCenter, setViewCenter] = useState<GeoPos | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function uploadMap(file: File | null) {
+    if (!file) return;
+    setUploadError(null);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      localStorage.setItem(CUSTOM_MAP_KEY, dataUrl);
+      setHasCustomMap(true);
+      setMapVersion((v) => v + 1);
+    } catch {
+      setUploadError('Klarte ikke å lese bildet. Prøv et JPG- eller PNG-bilde.');
+    }
+  }
+
+  function removeCustomMap() {
+    localStorage.removeItem(CUSTOM_MAP_KEY);
+    setHasCustomMap(false);
+    setMapVersion((v) => v + 1);
+  }
   const [address, setAddress] = useState(DEFAULT_ADDRESS);
   const [hits, setHits] = useState<GeocodeHit[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -66,18 +102,23 @@ export function MapTab() {
   }
 
   function scatter() {
-    leaderStore.update((s) => ({
-      ...s,
-      geoOverrides: {
-        ...scatterPosts(s.geoCenter ?? DEFAULT_CENTER, s.settings.enabledPosts),
-        // behold poster som allerede er plassert manuelt
-        ...Object.fromEntries(
-          Object.entries(s.geoOverrides ?? {}).filter(([n]) =>
-            s.settings.enabledPosts.includes(Number(n)),
+    // Plasser postene rundt der spillleder faktisk ser på kartet nå.
+    leaderStore.update((s) => {
+      const c = viewCenter ?? s.geoCenter ?? DEFAULT_CENTER;
+      return {
+        ...s,
+        geoCenter: c,
+        geoOverrides: {
+          ...scatterPosts(c, s.settings.enabledPosts),
+          // behold poster som allerede er plassert manuelt
+          ...Object.fromEntries(
+            Object.entries(s.geoOverrides ?? {}).filter(([n]) =>
+              s.settings.enabledPosts.includes(Number(n)),
+            ),
           ),
-        ),
-      },
-    }));
+        },
+      };
+    });
   }
 
   function moveGeo(postNumber: number, pos: GeoPos) {
@@ -150,7 +191,28 @@ export function MapTab() {
               </button>
             </div>
           </div>
+          <div className="card stack">
+            <h3>Eget kartbilde</h3>
+            <p className="small muted">
+              Last opp ditt eget kart/flyfoto (skjermbilde fra karttjeneste funker fint). Bildet
+              lagres kun på denne telefonen – lag som skal se det samme må bruke GPS-kartet,
+              eller så legges bildet i <code>public/skylleviga-kart.jpg</code> i repoet.
+            </p>
+            <input
+              type="file"
+              accept="image/*"
+              aria-label="Last opp kartbilde"
+              onChange={(e) => uploadMap(e.target.files?.[0] ?? null)}
+            />
+            {hasCustomMap && (
+              <button className="btn btn-small btn-ghost" onClick={removeCustomMap}>
+                🗑️ Fjern eget kartbilde
+              </button>
+            )}
+            {uploadError && <p className="small" style={{ color: 'var(--coral-dark)' }}>{uploadError}</p>}
+          </div>
           <MapView
+            key={mapVersion}
             positions={positions}
             visiblePosts={gameConfig.posts.map((p) => p.number)}
             editable={editing}
@@ -186,7 +248,7 @@ export function MapTab() {
             )}
             <div className="row">
               <button className="btn btn-small btn-sun" onClick={scatter}>
-                🎯 Plasser postene rundt sentrum
+                🎯 Plasser postene her i utsnittet
               </button>
               <button
                 className={`btn btn-small ${editing ? 'btn-grass' : ''}`}
@@ -207,11 +269,16 @@ export function MapTab() {
               </p>
             )}
           </div>
+          <p className="small muted">
+            Panorer/zoom kartet dit festen er, og trykk «Plasser postene her i utsnittet» – så
+            havner alle postene midt i det du ser. Dra dem deretter på plass.
+          </p>
           <GeoMap
             center={center}
             posts={geoPosts}
             editable={editing}
             onMove={moveGeo}
+            onViewChange={setViewCenter}
           />
           <p className="small muted">
             Kartfliser fra Esri/OpenStreetMap (gratis, uten nøkler). Posisjoner lagres lokalt og

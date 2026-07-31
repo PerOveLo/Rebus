@@ -10,8 +10,8 @@ export interface QuizComboData {
     answerIndex: number;
     funny: string; // morsom forklaring etter svaret
   };
-  mini: GameType;
-  miniData: Record<string, unknown>;
+  mini: GameType | null;
+  miniData?: Record<string, unknown>;
 }
 
 // Egen-rebus-poster: først et personlig quizspørsmål (generert fra
@@ -27,8 +27,10 @@ export function QuizComboGame({ post, onComplete }: GameProps) {
   onCompleteRef.current = onComplete;
 
   const q = data.question;
-  const Mini = games[data.mini];
-  const miniPost = { ...post, gameType: data.mini, data: data.miniData };
+  const Mini = data.mini ? games[data.mini] : null;
+  const miniPost = data.mini
+    ? { ...post, gameType: data.mini, data: data.miniData ?? {} }
+    : post;
 
   function pick(i: number) {
     if (stage !== 'quiz') return;
@@ -56,7 +58,7 @@ export function QuizComboGame({ post, onComplete }: GameProps) {
   if (stage === 'quiz') {
     return (
       <div className="stack">
-        <div className="badge">Del 1: Kjenner dere hverandre? (30p)</div>
+        <div className="badge">{data.mini ? 'Del 1: Kjenner dere hverandre? (30p)' : 'Kjenner dere hverandre? (60p)'}</div>
         <h3>{q.q}</h3>
         <div className="option-grid option-grid-1">
           {q.options.map((opt, i) => (
@@ -82,12 +84,25 @@ export function QuizComboGame({ post, onComplete }: GameProps) {
         <span className="big-emoji" aria-hidden="true">🎯</span>
         <h3>Riktig!</h3>
         <p className="muted">{q.funny}</p>
-        <button className="btn btn-primary btn-big" onClick={() => setStage('mini')}>
-          Del 2: Minispillet! (30p) 🎮
-        </button>
+        {Mini ? (
+          <button className="btn btn-primary btn-big" onClick={() => setStage('mini')}>
+            Del 2: Minispillet! (30p) 🎮
+          </button>
+        ) : (
+          <button
+            className="btn btn-primary btn-big"
+            onClick={() => {
+              if (doneRef.current) return;
+              doneRef.current = true;
+              onCompleteRef.current({ score: Math.min(post.points.main, quizScore * 2) });
+            }}
+          >
+            Videre! 🎉
+          </button>
+        )}
       </div>
     );
   }
 
-  return <Mini post={miniPost} onComplete={handleMiniDone} />;
+  return Mini ? <Mini post={miniPost} onComplete={handleMiniDone} /> : null;
 }
