@@ -82,14 +82,27 @@ export function PlayScreen() {
   if (allDone) return null;
 
   const geo = progress.setup.geo;
-  const geoMode = geo != null && geo[currentNum] != null;
+  const geoAvailable = geo != null && geo[currentNum] != null;
+  const classic = progress.preferClassicMap ?? false;
+  const geoMode = geoAvailable && !classic;
+
+  function stopGpsWatch() {
+    if (watchIdRef.current != null) navigator.geolocation?.clearWatch(watchIdRef.current);
+    watchIdRef.current = null;
+    setGpsOn(false);
+    setUserPos(null);
+  }
+
+  // Bytt mellom GPS-kart og vanlig modus (test innendørs uten å gå ruta).
+  function toggleClassic() {
+    if (!classic) stopGpsWatch();
+    setGpsError(null);
+    teamStore.update((p) => (p ? { ...p, preferClassicMap: !classic } : p));
+  }
 
   function toggleGps() {
     if (gpsOn) {
-      if (watchIdRef.current != null) navigator.geolocation?.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-      setGpsOn(false);
-      setUserPos(null);
+      stopGpsWatch();
       return;
     }
     if (!('geolocation' in navigator)) {
@@ -174,22 +187,34 @@ export function PlayScreen() {
               if (n === currentNum) navigate(`/post/${n}`);
             }}
           />
-          <button className={`btn btn-small ${gpsOn ? 'btn-grass' : 'btn-ghost'}`} onClick={toggleGps}>
-            {gpsOn ? '📍 GPS på (kun på denne telefonen)' : '📍 Vis hvor vi er (GPS, valgfritt)'}
-          </button>
+          <div className="row">
+            <button className={`btn btn-small ${gpsOn ? 'btn-grass' : 'btn-ghost'}`} onClick={toggleGps} style={{ flex: 1 }}>
+              {gpsOn ? '📍 GPS på (kun lokalt)' : '📍 Vis hvor vi er (GPS, valgfritt)'}
+            </button>
+            <button className="btn btn-small btn-ghost" onClick={toggleClassic}>
+              🛋️ Vanlig modus
+            </button>
+          </div>
           {gpsError && <p className="small muted center">{gpsError}</p>}
         </>
       ) : (
-        <MapView
-          positions={positions}
-          visiblePosts={order}
-          completedPosts={completed}
-          currentPost={currentNum}
-          previousPost={prevNum}
-          onSelect={(n) => {
-            if (n === currentNum) navigate(`/post/${n}`);
-          }}
-        />
+        <>
+          <MapView
+            positions={positions}
+            visiblePosts={order}
+            completedPosts={completed}
+            currentPost={currentNum}
+            previousPost={prevNum}
+            onSelect={(n) => {
+              if (n === currentNum) navigate(`/post/${n}`);
+            }}
+          />
+          {geoAvailable && (
+            <button className="btn btn-small btn-ghost" onClick={toggleClassic}>
+              🛰️ Tilbake til GPS-kartet
+            </button>
+          )}
+        </>
       )}
 
       <div className="card stack">

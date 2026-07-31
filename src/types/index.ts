@@ -146,6 +146,9 @@ export interface TeamProgress {
   creations: TeamCreations;
   // delvis fremdrift på en post (overlever at nettleseren lukkes)
   partial?: { postNumber: number; stage: number; mainScore: number; teamScore: number; hintUsed: boolean };
+  // Laget kan bytte fra GPS-kart til vanlig bildekart (f.eks. for å
+  // teste spillet innendørs uten å gå ruta).
+  preferClassicMap?: boolean;
 }
 
 // Det som pakkes inn i resultat-QR-koden.
