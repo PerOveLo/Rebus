@@ -221,7 +221,13 @@ export function TeamsTab() {
                 buildTeamLink(state, qrTeam, state.teams.findIndex((t) => t.id === qrTeam.id)),
               )}
               label="Laget skanner denne med kameraet sitt"
+              shareable
+              filename={`lag-${qrTeam.name.replace(/[^a-zA-Z0-9æøåÆØÅ]+/g, '-').toLowerCase()}.png`}
             />
+            <p className="small muted center">
+              Last ned eller kopier QR-bildet og send det i Messenger-gruppa – laget trykker på
+              bildet og skanner det (eller bruk «Kopier lenke»).
+            </p>
             <p className="small muted center">
               Hele spillet ligger i lenken – ingen server, ingen innlogging. Ett lag = én telefon.
             </p>

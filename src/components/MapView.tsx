@@ -48,7 +48,9 @@ export function MapView({
   const dragging = useRef<number | null>(null);
   const reduced = useReducedMotion();
 
-  const mapSrc = `${import.meta.env.BASE_URL}${gameConfig.map.image}`;
+  // Spillleder kan laste opp eget kartbilde (lagres lokalt på telefonen).
+  const [customImg] = useState(() => localStorage.getItem('skylleviga:custom-map'));
+  const mapSrc = customImg ?? `${import.meta.env.BASE_URL}${gameConfig.map.image}`;
 
   function posFromEvent(e: ReactPointerEvent): MapPos | null {
     const el = frameRef.current;

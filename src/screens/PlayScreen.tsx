@@ -4,6 +4,8 @@ import { activeConfig, activePosts, findActivePost, getActivePost } from '../ser
 import { MapView, directionDeg, distanceLabel } from '../components/MapView';
 import { GeoMap } from '../components/GeoMap';
 import { teamStore } from '../services/storage';
+import { teamLinkUrl } from '../services/share';
+import { QRView } from '../components/QRView';
 import { totalScore } from '../services/scoring';
 import {
   ARRIVAL_RADIUS_M,
@@ -23,6 +25,7 @@ export function PlayScreen() {
   const progress = teamStore.useStore();
   const reduced = useReducedMotion();
   const [symbolsOpen, setSymbolsOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
   const [userPos, setUserPos] = useState<GeoPos | null>(null);
   const [gpsOn, setGpsOn] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -258,6 +261,28 @@ export function PlayScreen() {
           Vi er fremme! 🏁
         </button>
       </div>
+
+      <button className="btn btn-ghost" onClick={() => setJoinOpen(true)}>
+        👥 Flere telefoner på laget?
+      </button>
+      {joinOpen && (
+        <div className="modal-backdrop" onClick={() => setJoinOpen(false)}>
+          <div className="modal stack" onClick={(e) => e.stopPropagation()}>
+            <h2 className="center">Bli med på {progress.setup.team.name}</h2>
+            <QRView
+              text={teamLinkUrl(progress.setup)}
+              label="Andre på laget skanner denne"
+              shareable
+              filename="lag-qr.png"
+            />
+            <p className="small muted center">
+              Flere foreldre kan gjerne følge spillet på egen mobil – men poengene teller bare på
+              lagets hovedtelefon (denne). De andre kan øve på minispillene helt gratis. 😄
+            </p>
+            <button className="btn" onClick={() => setJoinOpen(false)}>Lukk</button>
+          </div>
+        </div>
+      )}
 
       <button className="btn btn-ghost" onClick={() => setSymbolsOpen((o) => !o)}>
         🎒 Øysymboler ({progress.collectedSymbols.length}/{order.length})
