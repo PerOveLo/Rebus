@@ -32,6 +32,24 @@ export interface MapPos {
   y: number; // prosent fra toppen (0-100)
 }
 
+// Ekte GPS-posisjon (WGS84). Brukes av GPS-kartmodusen.
+export interface GeoPos {
+  lat: number;
+  lng: number;
+}
+
+// Personlig tilpasning for fremtidige rebuser: navnene og stedene i
+// standardhistorien byttes ut med deltakernes egne.
+export interface PersonalProfile {
+  placeName?: string; // erstatter «Skylleviga»
+  islandName?: string; // erstatter «Flekkerøya»
+  hostTall?: string; // erstatter «Sjur» (den høye verten/gründeren)
+  hostLaugh?: string; // erstatter «Ida» (den med latteren)
+  mathWhiz?: string; // erstatter «Emil»
+  rescuer?: string; // erstatter «Isak»
+  sleeper?: string; // erstatter «Jenny»
+}
+
 export interface IslandSymbol {
   id: string;
   name: string;
@@ -89,6 +107,10 @@ export interface TeamLinkPayload {
   order: number[]; // rekkefølge av postnummer, alltid med finalen sist
   finalCode: string;
   mapOverrides?: Record<number, MapPos>;
+  // GPS-modus: ekte posisjoner for postene + kartsentrum.
+  geo?: Record<number, GeoPos>;
+  center?: GeoPos;
+  personal?: PersonalProfile;
 }
 
 export interface PostResult {
@@ -124,6 +146,9 @@ export interface TeamProgress {
   creations: TeamCreations;
   // delvis fremdrift på en post (overlever at nettleseren lukkes)
   partial?: { postNumber: number; stage: number; mainScore: number; teamScore: number; hintUsed: boolean };
+  // Laget kan bytte fra GPS-kart til vanlig bildekart (f.eks. for å
+  // teste spillet innendørs uten å gå ruta).
+  preferClassicMap?: boolean;
 }
 
 // Det som pakkes inn i resultat-QR-koden.
@@ -147,6 +172,8 @@ export interface LeaderSettings {
   enabledPosts: number[]; // postnummer som er med (15 alltid med)
   rotateStarts: boolean;
   teamCount: number;
+  useGeoMap?: boolean; // GPS-kart i stedet for bildekart
+  personal?: PersonalProfile;
 }
 
 export interface LeaderState {
@@ -155,4 +182,6 @@ export interface LeaderState {
   teams: Team[];
   importedResults: TeamResultPayload[];
   mapOverrides: Record<number, MapPos>;
+  geoOverrides?: Record<number, GeoPos>;
+  geoCenter?: GeoPos;
 }

@@ -33,6 +33,16 @@ src/config/gameConfig.ts
 - Finalekode: `defaultFinalCode` (standard 2515) – kan også endres av spillleder i appen.
 - Spilllederkode: `defaultLeaderPin` (standard 2026).
 
+## GPS-kart og egen rebus (denne branchen)
+
+- **Spillleder → Kart → 🛰️ GPS-kart**: søk opp adressen (f.eks. «Skylleviga 46, Kristiansand»),
+  trykk «Plasser postene rundt sentrum» og dra postene dit de skal på ekte satellittkart.
+  Lagene kan slå på GPS (valgfritt) og se sin egen posisjon – alt forblir lokalt på telefonen.
+- **Spillleder → ✨ Tilpass**: plott inn egne navn og steder, så skrives hele historien og alle
+  postene om («Sjursteg» blir «[ditt navn]steg»). Tilpasningen følger med i laglenkene.
+- Kartfliser (Esri/OpenStreetMap) og adressesøk (Nominatim) er gratis og trenger ingen nøkler.
+  Flisene caches for dårlig dekning; bildekart-modusen fungerer helt uten nett.
+
 ## Slik spilles det
 
 1. Spillleder åpner appen → «Jeg er spillleder» → legger inn deltakere og fordeler lag.

@@ -71,15 +71,31 @@ export function buildTeamLink(
   teamIndex: number,
 ): TeamLinkPayload {
   const overrides: Record<number, MapPos> = state.mapOverrides;
+  const order = buildPostOrder(state.settings.enabledPosts, teamIndex, state.settings.rotateStarts);
+
+  // GPS-kartet brukes bare når alle aktive poster faktisk er plassert.
+  const geoOverrides = state.geoOverrides ?? {};
+  const geoComplete =
+    (state.settings.useGeoMap ?? false) &&
+    state.settings.enabledPosts.every((n) => geoOverrides[n]);
+  const geo = geoComplete
+    ? Object.fromEntries(
+        state.settings.enabledPosts.map((n) => [n, geoOverrides[n]]),
+      )
+    : undefined;
+
   return {
     v: 1,
     kind: 'team',
     eventName: gameConfig.eventName,
     team,
-    order: buildPostOrder(state.settings.enabledPosts, teamIndex, state.settings.rotateStarts),
+    order,
     finalCode: isValidCode(state.settings.finalCode)
       ? state.settings.finalCode
       : gameConfig.defaultFinalCode,
     mapOverrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+    geo,
+    center: geoComplete ? state.geoCenter : undefined,
+    personal: state.settings.personal,
   };
 }

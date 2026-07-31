@@ -5,15 +5,17 @@ import { leaderStore } from '../services/storage';
 import { ParticipantsTab } from './leader/ParticipantsTab';
 import { TeamsTab } from './leader/TeamsTab';
 import { MapTab } from './leader/MapTab';
+import { PersonalizeTab } from './leader/PersonalizeTab';
 import { SettingsTab } from './leader/SettingsTab';
 import { ResultsTab } from './leader/ResultsTab';
 
-type Tab = 'people' | 'teams' | 'map' | 'settings' | 'results';
+type Tab = 'people' | 'teams' | 'map' | 'personal' | 'settings' | 'results';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'people', label: '👥 Deltakere' },
   { id: 'teams', label: '🚩 Lag' },
   { id: 'map', label: '🗺️ Kart' },
+  { id: 'personal', label: '✨ Tilpass' },
   { id: 'results', label: '🏆 Resultater' },
   { id: 'settings', label: '⚙️ Oppsett' },
 ];
@@ -89,6 +91,7 @@ export function LeaderScreen() {
       {tab === 'people' && <ParticipantsTab />}
       {tab === 'teams' && <TeamsTab />}
       {tab === 'map' && <MapTab />}
+      {tab === 'personal' && <PersonalizeTab />}
       {tab === 'settings' && <SettingsTab />}
       {tab === 'results' && <ResultsTab />}
     </div>

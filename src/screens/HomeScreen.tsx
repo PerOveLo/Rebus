@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameConfig } from '../config/gameConfig';
+import { activeConfig } from '../services/personalize';
 import { TunnelIntro } from '../components/TunnelIntro';
 import { teamStore } from '../services/storage';
 
@@ -47,7 +47,7 @@ export function HomeScreen() {
       </button>
       {storyOpen && (
         <div className="card card-soft pop-in" style={{ whiteSpace: 'pre-line' }}>
-          {gameConfig.intro.story}
+          {activeConfig().intro.story}
         </div>
       )}
     </div>

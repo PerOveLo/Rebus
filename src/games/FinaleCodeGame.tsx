@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { gameConfig, getPost, isValidCode } from '../config/gameConfig';
+import { gameConfig, isValidCode } from '../config/gameConfig';
+import { getActivePost } from '../services/personalize';
 import { teamStore } from '../services/storage';
 import { Confetti } from '../components/Confetti';
 import type { GameProps } from './types';
@@ -18,7 +19,7 @@ export function FinaleCodeGame({ post, onComplete }: GameProps) {
 
   const glowPosts = useMemo(() => {
     const nums = gameConfig.finaleSymbolPosts.slice(0, code.length);
-    return nums.map((n, i) => ({ post: getPost(n), digit: code[i] }));
+    return nums.map((n, i) => ({ post: getActivePost(n), digit: code[i] }));
   }, [code]);
 
   const collected = progress ? new Set(progress.collectedSymbols) : new Set<string>();

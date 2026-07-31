@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { findPost } from '../config/gameConfig';
+import { findActivePost } from '../services/personalize';
 import { games } from '../games';
 import type { GameResult } from '../games/types';
 import { teamStore } from '../services/storage';
@@ -51,7 +51,7 @@ export function PostScreen() {
     handleGameDoneRef.current(result);
   }, []);
 
-  const maybePost = Number.isNaN(postNumber) ? undefined : findPost(postNumber);
+  const maybePost = Number.isNaN(postNumber) ? undefined : findActivePost(postNumber);
 
   if (!progress || !maybePost) {
     return (
