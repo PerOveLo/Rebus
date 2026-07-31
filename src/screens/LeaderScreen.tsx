@@ -15,7 +15,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'people', label: '👥 Deltakere' },
   { id: 'teams', label: '🚩 Lag' },
   { id: 'map', label: '🗺️ Kart' },
-  { id: 'personal', label: '✨ Tilpass' },
+  { id: 'personal', label: '🪄 Ny rebus' },
   { id: 'results', label: '🏆 Resultater' },
   { id: 'settings', label: '⚙️ Oppsett' },
 ];
@@ -34,8 +34,7 @@ export function LeaderScreen() {
         <h1 className="center">🧑‍✈️ Spillleder</h1>
         <div className="card stack center">
           <p className="muted small">
-            Tast den firesifrede spilllederkoden. (Standard: den står i gameConfig.ts – og på
-            lappen i lomma di.)
+            Tast den firesifrede spilllederkoden. Hint: Hvilket år er det nå? 😉
           </p>
           <input
             type="tel"

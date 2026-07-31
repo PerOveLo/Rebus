@@ -1,4 +1,5 @@
-import { gameConfig, getPost } from '../config/gameConfig';
+import { gameConfig } from '../config/gameConfig';
+import { findActivePost } from './personalize';
 import type { Category, TeamProgress, TeamResultPayload } from '../types';
 
 export function totalScore(progress: TeamProgress): number {
@@ -15,7 +16,8 @@ export function maxPossibleScore(progress: TeamProgress): number {
 export function categoryScores(progress: TeamProgress): Partial<Record<Category, number>> {
   const scores: Partial<Record<Category, number>> = {};
   for (const r of Object.values(progress.results)) {
-    const post = getPost(r.postNumber);
+    const post = findActivePost(r.postNumber);
+    if (!post) continue;
     const points = r.mainScore + r.teamScore + r.bonusScore;
     for (const cat of post.categories) {
       scores[cat] = (scores[cat] ?? 0) + points;

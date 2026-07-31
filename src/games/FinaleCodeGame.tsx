@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { gameConfig, isValidCode } from '../config/gameConfig';
-import { getActivePost } from '../services/personalize';
+import { activeCustomRebus, activeFinaleSymbolPosts, getActivePost } from '../services/personalize';
 import { teamStore } from '../services/storage';
 import { Confetti } from '../components/Confetti';
 import type { GameProps } from './types';
@@ -18,7 +18,7 @@ export function FinaleCodeGame({ post, onComplete }: GameProps) {
   const [solved, setSolved] = useState(false);
 
   const glowPosts = useMemo(() => {
-    const nums = gameConfig.finaleSymbolPosts.slice(0, code.length);
+    const nums = activeFinaleSymbolPosts().slice(0, code.length);
     return nums.map((n, i) => ({ post: getActivePost(n), digit: code[i] }));
   }, [code]);
 
@@ -51,7 +51,7 @@ export function FinaleCodeGame({ post, onComplete }: GameProps) {
         <Confetti />
         <span className="big-emoji" aria-hidden="true">🏡✨</span>
         <h3>Huset lyser opp! Tunnelen åpner seg!</h3>
-        <p className="muted">Nøkkelen til Skylleviga er deres!</p>
+        <p className="muted">Nøkkelen til {activeCustomRebus()?.place ?? 'Skylleviga'} er deres!</p>
         <div style={{ fontSize: '3rem' }} aria-hidden="true" className="glow">🗝️</div>
       </div>
     );

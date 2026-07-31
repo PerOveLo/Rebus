@@ -16,6 +16,10 @@ import { AnimalMemoryGame } from './AnimalMemoryGame';
 import { LanguageMatchGame } from './LanguageMatchGame';
 import { SwipeDetectorGame } from './SwipeDetectorGame';
 import { FinaleCodeGame } from './FinaleCodeGame';
+import { SimonGame } from './SimonGame';
+import { WhackMoleGame } from './WhackMoleGame';
+import { BalloonPumpGame } from './BalloonPumpGame';
+import { QuizComboGame } from './QuizComboGame';
 
 export const games: Record<GameType, ComponentType<GameProps>> = {
   'tunnel-run': TunnelRunGame,
@@ -33,4 +37,8 @@ export const games: Record<GameType, ComponentType<GameProps>> = {
   'language-match': LanguageMatchGame,
   'swipe-detector': SwipeDetectorGame,
   'finale-code': FinaleCodeGame,
+  'simon': SimonGame,
+  'whack': WhackMoleGame,
+  'balloon': BalloonPumpGame,
+  'quiz-combo': QuizComboGame,
 };

@@ -84,10 +84,13 @@ export function buildTeamLink(
       )
     : undefined;
 
+  const custom =
+    state.settings.activeRebus === 'custom' && state.customRebus ? state.customRebus : undefined;
+
   return {
     v: 1,
     kind: 'team',
-    eventName: gameConfig.eventName,
+    eventName: custom?.name ?? gameConfig.eventName,
     team,
     order,
     finalCode: isValidCode(state.settings.finalCode)
@@ -96,6 +99,6 @@ export function buildTeamLink(
     mapOverrides: Object.keys(overrides).length > 0 ? overrides : undefined,
     geo,
     center: geoComplete ? state.geoCenter : undefined,
-    personal: state.settings.personal,
+    custom,
   };
 }

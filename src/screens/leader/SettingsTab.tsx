@@ -55,6 +55,10 @@ export function SettingsTab() {
       finalCode: isValidCode(state.settings.finalCode)
         ? state.settings.finalCode
         : gameConfig.defaultFinalCode,
+      custom:
+        state.settings.activeRebus === 'custom' && state.customRebus
+          ? state.customRebus
+          : undefined,
       mapOverrides: Object.keys(state.mapOverrides).length > 0 ? state.mapOverrides : undefined,
     };
     teamStore.set({

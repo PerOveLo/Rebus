@@ -13,6 +13,8 @@ interface Obstacle {
 interface TunnelData {
   obstacles: { emoji: string; label: string }[];
   secondsToSurvive: number;
+  tunnelLabel?: string;
+  doneJoke?: string;
 }
 
 // Post 1: Trykk på felt for å bytte fil og unngå hindringene i tunnelen.
@@ -123,7 +125,7 @@ export function TunnelRunGame({ post, onComplete }: GameProps) {
       <div className="stack center pop-in">
         <span className="big-emoji" aria-hidden="true">🎉</span>
         <h3>Dere kom dere gjennom tunnelen!</h3>
-        <p className="muted small">Øyrådet noterer: kjørestil «forsiktig byfolk».</p>
+        <p className="muted small">{data.doneJoke ?? 'Øyrådet noterer: kjørestil «forsiktig byfolk».'}</p>
       </div>
     );
   }
@@ -195,7 +197,7 @@ export function TunnelRunGame({ post, onComplete }: GameProps) {
           aria-hidden="true"
           style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', color: '#ffe9b0', fontSize: '0.8rem', fontWeight: 700, pointerEvents: 'none' }}
         >
-          TUNNELEN TIL FLEKKERØYA
+          {data.tunnelLabel ?? 'TUNNELEN TIL FLEKKERØYA'}
         </span>
       </div>
       <p className="small muted center">Trykk på et felt for å svinge dit.</p>

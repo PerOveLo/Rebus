@@ -10,7 +10,9 @@ type Phase = 'idle' | 'running' | 'failed' | 'done';
 // DeviceMotion brukes KUN etter aktivt samtykke; fingermetoden er
 // alltid tilgjengelig og likeverdig.
 export function StillnessGame({ post, onComplete }: GameProps) {
-  const seconds = ((post.data as { seconds?: number } | undefined)?.seconds ?? 8);
+  const gameData = (post.data ?? {}) as { seconds?: number; sleeperName?: string };
+  const seconds = gameData.seconds ?? 8;
+  const sleeper = gameData.sleeperName ?? 'Jenny';
   const reduced = useReducedMotion();
   const [mode, setMode] = useState<Mode>('choose');
   const [phase, setPhase] = useState<Phase>('idle');
@@ -122,7 +124,7 @@ export function StillnessGame({ post, onComplete }: GameProps) {
     return (
       <div className="stack center pop-in">
         <span className="big-emoji" aria-hidden="true">😴</span>
-        <h3>Sshh … Jenny sover fortsatt!</h3>
+        <h3>Sshh … {sleeper} sover fortsatt!</h3>
         <p className="muted small">Verdensmesteren snorker videre. Godt jobbet.</p>
       </div>
     );
@@ -135,7 +137,7 @@ export function StillnessGame({ post, onComplete }: GameProps) {
       {phase === 'failed' && (
         <div className="card card-soft pop-in">
           <span className="big-emoji" aria-hidden="true">🙈</span>
-          <p style={{ marginTop: 6 }}>Å nei. Jenny snudde seg. Prøv igjen.</p>
+          <p style={{ marginTop: 6 }}>Å nei. {sleeper} snudde seg. Prøv igjen.</p>
         </div>
       )}
 
