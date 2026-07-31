@@ -1,128 +1,205 @@
 import { useState } from 'react';
 import { leaderStore } from '../../services/storage';
-import { personalizeConfig } from '../../services/personalize';
-import type { PersonalProfile } from '../../types';
+import { CUSTOM_POST_COUNTS, generateFromTemplate, generateWithClaude } from '../../services/rebusBuilder';
+import type { RebusAnswers } from '../../types';
+
+const API_KEY_STORAGE = 'skylleviga:anthropic-key';
 
 interface Question {
-  key: keyof PersonalProfile;
+  key: keyof RebusAnswers;
   label: string;
   placeholder: string;
-  hint?: string;
+  multiline?: boolean;
 }
 
 const QUESTIONS: Question[] = [
-  { key: 'placeName', label: 'Hva heter stedet der festen er?', placeholder: 'Skylleviga' },
-  { key: 'islandName', label: 'Hva heter øya eller bygda?', placeholder: 'Flekkerøya' },
+  { key: 'place', label: 'Hvor er festen?', placeholder: 'F.eks. Søm' },
+  { key: 'groupName', label: 'Hva kaller dere gjengen?', placeholder: 'F.eks. Familien på Søm' },
+  { key: 'people', label: 'Hvem er med? (navn, kommaseparert)', placeholder: 'Per, Kari, Ola …' },
   {
-    key: 'hostTall',
-    label: 'Hvem er den (nesten) to meter høye sjefen?',
-    placeholder: 'Sjur',
-    hint: 'Blir helten i Sjur-meteren og Sjefens innboks.',
+    key: 'funFacts',
+    label: 'Fortell noe morsomt om folkene',
+    placeholder: 'Per synger alltid i dusjen, Kari vinner alt i kort …',
+    multiline: true,
   },
-  {
-    key: 'hostLaugh',
-    label: 'Hvem har den mest smittende latteren?',
-    placeholder: 'Ida',
-    hint: 'Blir stjernen i Latterlaboratoriet.',
-  },
-  { key: 'mathWhiz', label: 'Hvem er mattegeniet?', placeholder: 'Emil' },
-  { key: 'rescuer', label: 'Hvem elsker redningsoppdrag?', placeholder: 'Isak' },
-  { key: 'sleeper', label: 'Hvem er sovemesteren?', placeholder: 'Jenny' },
+  { key: 'knownFor', label: 'Hva er gjengen kjent for?', placeholder: 'Taco hver fredag, høylytte quizkvelder …', multiline: true },
+  { key: 'insideJoke', label: 'En intern vits eller noe alle ler av?', placeholder: 'Den gangen teltet blåste på sjøen …', multiline: true },
+  { key: 'food', label: 'Hva spiser eller drikker dere alltid sammen?', placeholder: 'Vafler og kakao' },
+  { key: 'placeFact', label: 'Noe spesielt ved stedet?', placeholder: 'Verdens beste badeplass rett nedenfor', multiline: true },
 ];
 
-// «Lag din egen rebus»: svar på noen spørsmål, så skrives hele
-// historien og alle postene om med deres egne navn og steder.
+const EMPTY: RebusAnswers = {
+  place: '', groupName: '', people: '', funFacts: '', knownFor: '', insideJoke: '', food: '', placeFact: '',
+};
+
+// «Lag ny rebus»: Skylleviga-rebusen består urørt – her bygger spillleder
+// en helt egen rebus for sin egen gjeng, generert fra svarene under.
 export function PersonalizeTab() {
   const state = leaderStore.useStore();
-  const [draft, setDraft] = useState<PersonalProfile>(state.settings.personal ?? {});
-  const [saved, setSaved] = useState(false);
+  const [answers, setAnswers] = useState<RebusAnswers>(state.rebusAnswers ?? EMPTY);
+  const [postCount, setPostCount] = useState(10);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function setField(key: keyof PersonalProfile, value: string) {
-    setDraft((d) => ({ ...d, [key]: value }));
-    setSaved(false);
+  const custom = state.customRebus;
+  const isActive = state.settings.activeRebus === 'custom' && custom != null;
+
+  function setField(key: keyof RebusAnswers, value: string) {
+    setAnswers((a) => ({ ...a, [key]: value }));
   }
 
-  function apply() {
-    const cleaned: PersonalProfile = {};
-    for (const [k, v] of Object.entries(draft)) {
-      if (typeof v === 'string' && v.trim()) cleaned[k as keyof PersonalProfile] = v.trim();
+  const filled = answers.place.trim() && answers.people.trim();
+
+  async function generate(useAi: boolean) {
+    setError(null);
+    setBusy(true);
+    try {
+      if (useAi) localStorage.setItem(API_KEY_STORAGE, apiKey);
+      const rebus = useAi
+        ? await generateWithClaude(answers, postCount, apiKey.trim())
+        : generateFromTemplate(answers, postCount);
+      leaderStore.update((s) => ({ ...s, customRebus: rebus, rebusAnswers: answers }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Noe gikk galt. Prøv igjen.');
+    } finally {
+      setBusy(false);
     }
+  }
+
+  function activate() {
+    leaderStore.update((s) =>
+      s.customRebus
+        ? {
+            ...s,
+            settings: {
+              ...s.settings,
+              activeRebus: 'custom',
+              enabledPosts: s.customRebus.posts.map((p) => p.number),
+            },
+          }
+        : s,
+    );
+  }
+
+  function deactivate() {
     leaderStore.update((s) => ({
       ...s,
       settings: {
         ...s.settings,
-        personal: Object.keys(cleaned).length > 0 ? cleaned : undefined,
+        activeRebus: 'standard',
+        enabledPosts: Array.from({ length: 15 }, (_, i) => i + 1),
       },
     }));
-    setSaved(true);
   }
-
-  function reset() {
-    setDraft({});
-    leaderStore.update((s) => ({
-      ...s,
-      settings: { ...s.settings, personal: undefined },
-    }));
-    setSaved(true);
-  }
-
-  const preview = personalizeConfig(
-    Object.fromEntries(
-      Object.entries(draft).filter(([, v]) => typeof v === 'string' && v.trim()),
-    ) as PersonalProfile,
-  );
 
   return (
     <div className="stack">
       <div className="card stack">
-        <h2>✨ Lag deres egen rebus</h2>
+        <h2>🪄 Lag ny rebus</h2>
         <p className="small muted">
-          Standardspillet handler om familien i Skylleviga. Svar på spørsmålene under, så
-          skrives historien, postene og alle vitsene om med deres egne navn og steder. Tomme
-          felt beholder originalen.
+          Skylleviga-rebusen består som den er. Her lager du en helt egen rebus for din gjeng –
+          alle spørsmål og oppgaver skrives ut fra svarene dine. Minispillene er de samme gøyale
+          som i originalen, og hver post har voksenbonus der barna dømmer.
         </p>
         {QUESTIONS.map((q) => (
           <div key={q.key} className="stack" style={{ gap: 4 }}>
-            <label className="small" htmlFor={`q-${q.key}`}>
-              <strong>{q.label}</strong>
-            </label>
-            <input
-              id={`q-${q.key}`}
-              type="text"
-              maxLength={30}
-              placeholder={q.placeholder}
-              value={draft[q.key] ?? ''}
-              onChange={(e) => setField(q.key, e.target.value)}
-            />
-            {q.hint && <span className="small muted">{q.hint}</span>}
+            <label className="small" htmlFor={`q-${q.key}`}><strong>{q.label}</strong></label>
+            {q.multiline ? (
+              <textarea
+                id={`q-${q.key}`}
+                rows={2}
+                placeholder={q.placeholder}
+                value={answers[q.key]}
+                onChange={(e) => setField(q.key, e.target.value)}
+              />
+            ) : (
+              <input
+                id={`q-${q.key}`}
+                type="text"
+                placeholder={q.placeholder}
+                value={answers[q.key]}
+                onChange={(e) => setField(q.key, e.target.value)}
+              />
+            )}
           </div>
         ))}
         <div className="row">
-          <button className="btn btn-primary" onClick={apply}>
-            {saved ? '✅ Lagret' : 'Bruk tilpasningen'}
-          </button>
-          <button className="btn btn-ghost btn-small" onClick={reset}>
-            Tilbake til originalen
-          </button>
+          <label className="small" htmlFor="postcount" style={{ whiteSpace: 'nowrap' }}>
+            <strong>Antall poster:</strong>
+          </label>
+          <select
+            id="postcount"
+            value={postCount}
+            onChange={(e) => setPostCount(Number(e.target.value))}
+            style={{ width: 90 }}
+          >
+            {CUSTOM_POST_COUNTS.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
         </div>
-        <p className="small muted">
-          Tilpasningen følger med i laglenkene, så alle telefoner får samme historie.
-        </p>
       </div>
 
-      <div className="card card-soft stack">
-        <h3>Forhåndsvisning</h3>
-        <p className="small" style={{ whiteSpace: 'pre-line' }}>
-          {preview.intro.story}
+      <div className="card stack">
+        <h3>🤖 Generer med Claude (anbefalt)</h3>
+        <p className="small muted">
+          Med en Anthropic API-nøkkel skriver Claude 15–20 skreddersydde spørsmål og oppgaver av
+          svarene dine. Nøkkelen lagres kun i denne nettleseren, og kallet går direkte fra
+          telefonen til Anthropic. (Skulle et kall avvises, prøves en annen Claude-modell
+          automatisk.)
         </p>
-        <div className="row-wrap">
-          {preview.posts.slice(0, 6).map((p) => (
-            <span key={p.number} className="chip">
-              {p.symbol} {p.title}
-            </span>
-          ))}
-        </div>
+        <input
+          type="password"
+          placeholder="sk-ant-…"
+          aria-label="Anthropic API-nøkkel"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          autoComplete="off"
+        />
+        <button
+          className="btn btn-primary"
+          onClick={() => generate(true)}
+          disabled={busy || !filled || !apiKey.trim()}
+        >
+          {busy ? '🪄 Skriver rebusen … (kan ta et minutt)' : '🪄 Generer med Claude'}
+        </button>
+        <button className="btn btn-ghost btn-small" onClick={() => generate(false)} disabled={busy || !filled}>
+          Eller: lag en enkel versjon uten API-nøkkel
+        </button>
+        {!filled && <p className="small muted">Fyll inn minst sted og hvem som er med.</p>}
+        {error && <p className="small" style={{ color: 'var(--coral-dark)' }}>{error}</p>}
       </div>
+
+      {custom && (
+        <div className="card stack">
+          <div className="spread">
+            <h3 style={{ margin: 0 }}>«{custom.name}»</h3>
+            {isActive ? <span className="badge">✅ Aktiv</span> : <span className="chip">Klar</span>}
+          </div>
+          <p className="small" style={{ whiteSpace: 'pre-line' }}>{custom.story}</p>
+          <div className="row-wrap">
+            {custom.posts.map((p) => (
+              <span key={p.number} className="chip" title={p.clue}>
+                {p.number}. {p.symbol} {p.title}
+              </span>
+            ))}
+          </div>
+          {!isActive ? (
+            <button className="btn btn-grass btn-big" onClick={activate}>
+              Bruk denne rebusen 🚀
+            </button>
+          ) : (
+            <button className="btn btn-ghost" onClick={deactivate}>
+              Bytt tilbake til Skylleviga-rebusen
+            </button>
+          )}
+          <p className="small muted">
+            Når rebusen er aktiv, får nye laglenker denne i stedet for Skylleviga-versjonen.
+            Plasser postene under 🗺️ Kart (GPS-kartet fungerer perfekt til dette).
+          </p>
+        </div>
+      )}
     </div>
   );
 }

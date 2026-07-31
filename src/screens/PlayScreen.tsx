@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameConfig } from '../config/gameConfig';
-import { activeConfig, findActivePost, getActivePost } from '../services/personalize';
+import { activeConfig, activePosts, findActivePost, getActivePost } from '../services/personalize';
 import { MapView, directionDeg, distanceLabel } from '../components/MapView';
 import { GeoMap } from '../components/GeoMap';
 import { teamStore } from '../services/storage';
@@ -31,14 +30,20 @@ export function PlayScreen() {
 
   const positions = useMemo(() => {
     const base: Record<number, { x: number; y: number }> = {};
-    for (const p of gameConfig.posts) base[p.number] = { ...p.mapPos };
+    for (const p of activePosts()) base[p.number] = { ...p.mapPos };
     if (progress?.setup.mapOverrides) {
       for (const [num, pos] of Object.entries(progress.setup.mapOverrides)) {
         base[Number(num)] = pos;
       }
     }
     return base;
-  }, [progress?.setup.mapOverrides]);
+  }, [progress?.setup.mapOverrides, progress?.setup.custom]);
+
+  const postSymbols = useMemo(() => {
+    const map: Record<number, string> = {};
+    for (const p of activePosts()) map[p.number] = p.symbol;
+    return map;
+  }, [progress?.setup.custom]);
 
   const order = progress?.setup.order ?? [];
   const completedCount = order.filter((n) => progress?.results[n]).length;
@@ -205,6 +210,7 @@ export function PlayScreen() {
             completedPosts={completed}
             currentPost={currentNum}
             previousPost={prevNum}
+            symbols={postSymbols}
             onSelect={(n) => {
               if (n === currentNum) navigate(`/post/${n}`);
             }}

@@ -13,6 +13,7 @@ export interface MapViewProps {
   editable?: boolean;
   onMove?: (postNumber: number, pos: MapPos) => void;
   onSelect?: (postNumber: number) => void;
+  symbols?: Record<number, string>; // overstyr postsymboler (egen rebus)
 }
 
 const SYMBOLS: Record<number, string> = Object.fromEntries(
@@ -40,6 +41,7 @@ export function MapView({
   editable = false,
   onMove,
   onSelect,
+  symbols,
 }: MapViewProps) {
   const [imgOk, setImgOk] = useState(true);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -145,7 +147,7 @@ export function MapView({
           >
             <span className="map-pin-dot">{done ? '✓' : num}</span>
             {(isNext || editable) && (
-              <span style={{ fontSize: '1.05rem', marginTop: 1, textShadow: '0 1px 3px #fff' }}>{SYMBOLS[num]}</span>
+              <span style={{ fontSize: '1.05rem', marginTop: 1, textShadow: '0 1px 3px #fff' }}>{(symbols ?? SYMBOLS)[num]}</span>
             )}
           </button>
         );

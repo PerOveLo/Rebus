@@ -25,7 +25,11 @@ export type GameType =
   | 'animal-memory'
   | 'language-match'
   | 'swipe-detector'
-  | 'finale-code';
+  | 'finale-code'
+  | 'simon'
+  | 'whack'
+  | 'balloon'
+  | 'quiz-combo';
 
 export interface MapPos {
   x: number; // prosent fra venstre (0-100)
@@ -38,16 +42,27 @@ export interface GeoPos {
   lng: number;
 }
 
-// Personlig tilpasning for fremtidige rebuser: navnene og stedene i
-// standardhistorien byttes ut med deltakernes egne.
-export interface PersonalProfile {
-  placeName?: string; // erstatter «Skylleviga»
-  islandName?: string; // erstatter «Flekkerøya»
-  hostTall?: string; // erstatter «Sjur» (den høye verten/gründeren)
-  hostLaugh?: string; // erstatter «Ida» (den med latteren)
-  mathWhiz?: string; // erstatter «Emil»
-  rescuer?: string; // erstatter «Isak»
-  sleeper?: string; // erstatter «Jenny»
+// «Lag ny rebus»: spillleders svar på de morsomme spørsmålene.
+// Alle spørsmål og poster genereres fra disse.
+export interface RebusAnswers {
+  place: string; // f.eks. «Søm»
+  groupName: string; // f.eks. «Familien på Søm»
+  people: string; // navn, kommaseparert
+  funFacts: string; // morsomme ting om folkene
+  knownFor: string; // hva gjengen er kjent for
+  insideJoke: string; // intern vits
+  food: string; // hva de alltid spiser/drikker
+  placeFact: string; // noe spesielt ved stedet
+}
+
+// En komplett egen rebus, generert fra svarene. Skylleviga-rebusen i
+// gameConfig.ts røres aldri – denne lever ved siden av.
+export interface CustomRebusPayload {
+  id: string;
+  name: string; // rebusens navn
+  place: string;
+  story: string; // introhistorie
+  posts: PostConfig[]; // nummerert 1..N-1 + finalen som 15
 }
 
 export interface IslandSymbol {
@@ -110,7 +125,8 @@ export interface TeamLinkPayload {
   // GPS-modus: ekte posisjoner for postene + kartsentrum.
   geo?: Record<number, GeoPos>;
   center?: GeoPos;
-  personal?: PersonalProfile;
+  // Egen rebus: hele innholdet følger med i lenken.
+  custom?: CustomRebusPayload;
 }
 
 export interface PostResult {
@@ -173,7 +189,7 @@ export interface LeaderSettings {
   rotateStarts: boolean;
   teamCount: number;
   useGeoMap?: boolean; // GPS-kart i stedet for bildekart
-  personal?: PersonalProfile;
+  activeRebus?: 'standard' | 'custom';
 }
 
 export interface LeaderState {
@@ -184,4 +200,6 @@ export interface LeaderState {
   mapOverrides: Record<number, MapPos>;
   geoOverrides?: Record<number, GeoPos>;
   geoCenter?: GeoPos;
+  customRebus?: CustomRebusPayload;
+  rebusAnswers?: RebusAnswers;
 }

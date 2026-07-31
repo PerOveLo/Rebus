@@ -43,6 +43,22 @@ src/config/gameConfig.ts
 - Kartfliser (Esri/OpenStreetMap) og adressesøk (Nominatim) er gratis og trenger ingen nøkler.
   Flisene caches for dårlig dekning; bildekart-modusen fungerer helt uten nett.
 
+## 🪄 Lag din egen rebus (for andre fester)
+
+Skylleviga-rebusen ligger fast. Under **Spillleder → 🪄 Ny rebus** kan du lage en helt egen
+rebus for en annen gjeng (f.eks. familien på Søm):
+
+1. Svar på noen morsomme spørsmål om gjengen, stedet, maten og den interne vitsen.
+2. **Med Anthropic API-nøkkel**: Claude skriver skreddersydde spørsmål, historie, lagoppgaver
+   og voksenbonuser fra svarene. Nøkkelen lagres kun i nettleseren, og kallet går direkte fra
+   telefonen til Anthropic.
+3. **Uten nøkkel**: en innebygd mal-generator lager en enklere, fullt spillbar versjon.
+4. Trykk «Bruk denne rebusen» – nye laglenker får da den egne rebusen. Plasser postene på
+   GPS-kartet under 🗺️ Kart.
+
+Hver egen post har et personlig quizspørsmål + et generisk minispill (Simon, fang-vaffelen,
+ballongpumpa, tunnelkjøring m.fl.) + fysisk lagoppgave + voksenbonus der barna dømmer.
+
 ## Slik spilles det
 
 1. Spillleder åpner appen → «Jeg er spillleder» → legger inn deltakere og fordeler lag.
