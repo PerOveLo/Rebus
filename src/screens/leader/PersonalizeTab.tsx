@@ -42,6 +42,7 @@ export function PersonalizeTab() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const custom = state.customRebus;
   const isActive = state.settings.activeRebus === 'custom' && custom != null;
@@ -74,6 +75,24 @@ export function PersonalizeTab() {
     if (t && t.setup.team.name === 'Testlaget' && t.setup.team.icon === '🧪') {
       teamStore.set(null);
     }
+  }
+
+  // Slett den genererte rebusen helt – da kan den ikke lenger havne i
+  // nye laglenker ved et uhell. Faller tilbake til Skylleviga.
+  function deleteCustom() {
+    leaderStore.update((s) => ({
+      ...s,
+      customRebus: undefined,
+      settings:
+        s.settings.activeRebus === 'custom'
+          ? {
+              ...s.settings,
+              activeRebus: 'standard',
+              enabledPosts: builtinRebuses.standard.posts.map((p) => p.number),
+            }
+          : s.settings,
+    }));
+    setConfirmDelete(false);
   }
 
   function setField(key: keyof RebusAnswers, value: string) {
@@ -254,9 +273,25 @@ export function PersonalizeTab() {
               Bytt tilbake til Skylleviga-rebusen
             </button>
           )}
+          {!confirmDelete ? (
+            <button className="btn btn-small btn-ghost" onClick={() => setConfirmDelete(true)}>
+              🗑️ Slett denne genererte rebusen …
+            </button>
+          ) : (
+            <div className="row">
+              <button className="btn btn-small btn-primary" onClick={deleteCustom}>
+                Ja, slett den
+              </button>
+              <button className="btn btn-small btn-ghost" onClick={() => setConfirmDelete(false)}>
+                Avbryt
+              </button>
+            </div>
+          )}
           <p className="small muted">
             Når rebusen er aktiv, får nye laglenker denne i stedet for de innebygde.
             Plasser postene under 🗺️ Kart (GPS-kartet fungerer perfekt til dette).
+            Obs: lag som allerede har fått en lenke, beholder rebusen sin – del ut nye lenker
+            hvis dere bytter.
           </p>
         </div>
       )}

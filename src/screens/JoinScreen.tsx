@@ -52,6 +52,9 @@ export function JoinScreen() {
   return (
     <div className="screen">
       <h1 className="center">Velkommen, lag!</h1>
+      <p className="small muted center" style={{ marginTop: -8, fontWeight: 700 }}>
+        🎪 {payload.eventName}
+      </p>
       <TeamPass team={payload.team} />
       <div className="card stack">
         <p className="small muted">
