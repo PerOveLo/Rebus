@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { leaderConfig } from '../../services/personalize';
 import { leaderStore } from '../../services/storage';
-import { autoSplitTeams, buildTeamLink, randomTeamIcon, randomTeamName } from '../../services/teams';
+import { autoSplitTeams, buildPostOrder, buildTeamLink, randomTeamIcon, randomTeamName } from '../../services/teams';
 import { teamLinkUrl } from '../../services/share';
 import { QRView } from '../../components/QRView';
 import { TeamPass } from '../../components/TeamPass';
@@ -17,7 +17,9 @@ export function TeamsTab() {
   const [qrTeam, setQrTeam] = useState<Team | null>(null);
   const [passTeam, setPassTeam] = useState<Team | null>(null);
   const [moveMember, setMoveMember] = useState<{ memberId: string; fromTeam: string } | null>(null);
-  const [copied, setCopied] = useState(false);
+  // Hvilket lag som nettopp fikk lenken sin kopiert – per lag, ellers
+  // ser det ut som alle knappene kopierer samme lenke.
+  const [copiedTeamId, setCopiedTeamId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const totalMembers = state.teams.reduce((n, t) => n + t.members.length, 0);
@@ -93,8 +95,8 @@ export function TeamsTab() {
     const url = teamLinkUrl(buildTeamLink(state, team, index));
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
+      setCopiedTeamId(team.id);
+      setTimeout(() => setCopiedTeamId(null), 2200);
     } catch {
       prompt('Kopier lenken manuelt:', url);
     }
@@ -198,9 +200,14 @@ export function TeamsTab() {
               className="btn btn-small btn-ghost"
               onClick={() => copyLink(team, index)}
             >
-              {copied ? '✅ Kopiert' : '🔗 Kopier lenke'}
+              {copiedTeamId === team.id ? '✅ Kopiert!' : '🔗 Kopier lenke'}
             </button>
           </div>
+          <p className="small muted" style={{ margin: 0 }}>
+            Starter på post{' '}
+            {buildPostOrder(state.settings.enabledPosts, index, state.settings.rotateStarts)[0]} ·
+            egen lenke og QR for dette laget
+          </p>
         </div>
       ))}
 
