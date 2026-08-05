@@ -224,6 +224,46 @@ input:focus, textarea:focus, select:focus {
   0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 201, 77, 0.7)); }
   50% { filter: drop-shadow(0 0 16px rgba(255, 201, 77, 1)); }
 }
+@keyframes run-across {
+  0% { transform: translateX(0) translateY(0) rotate(0deg); }
+  25% { transform: translateX(30vw) translateY(-10px) rotate(-8deg); }
+  50% { transform: translateX(60vw) translateY(0) rotate(8deg); }
+  75% { transform: translateX(90vw) translateY(-10px) rotate(-8deg); }
+  100% { transform: translateX(125vw) translateY(0) rotate(0deg); }
+}
+
+/* Familiehendelser: figur som løper over skjermen med snakkeboble */
+.family-event {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+}
+.family-event-emoji {
+  position: absolute;
+  top: 40%;
+  left: -14vw;
+  font-size: 3.2rem;
+  filter: drop-shadow(0 3px 6px rgba(18, 48, 68, 0.25));
+}
+.family-event-run { animation: run-across 2.4s ease-in-out forwards; }
+.family-event-still { left: 50%; transform: translateX(-50%); }
+.family-event-bubble {
+  position: absolute;
+  top: calc(40% - 3.4em);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 16px;
+  padding: 8px 14px;
+  box-shadow: var(--shadow);
+  font-weight: 700;
+  font-size: 0.92rem;
+  max-width: 84vw;
+  text-align: center;
+  animation: pop-in 0.3s ease both;
+}
 
 .floaty { animation: floaty 3s ease-in-out infinite; }
 .pop-in { animation: pop-in 0.45s ease both; }

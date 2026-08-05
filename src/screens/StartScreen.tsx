@@ -1,18 +1,40 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameConfig } from '../config/gameConfig';
-import { teamStore, uid } from '../services/storage';
+import { builtinRebus, builtinRebuses } from '../config/rebuses';
+import { leaderBuiltinId } from '../services/personalize';
+import { leaderStore, teamStore, uid } from '../services/storage';
 import { randomTeamIcon, randomTeamName } from '../services/teams';
-import type { Participant, TeamLinkPayload } from '../types';
+import type { BuiltinRebusId, Participant, TeamLinkPayload } from '../types';
 
-// «Start øyprøven»: enten har laget fått en lenke/QR fra spillleder,
+// «Start rebusen»: enten har laget fått en lenke/QR fra spillleder,
 // eller så spilles alt på denne ene telefonen («Kun denne telefonen»).
 export function StartScreen() {
   const navigate = useNavigate();
+  const leader = leaderStore.get();
   const [mode, setMode] = useState<'choose' | 'solo'>('choose');
+  // Forvalgt rebus følger spillleders valg på denne telefonen.
+  const [rebusId, setRebusId] = useState<BuiltinRebusId>(() => leaderBuiltinId(leader));
+  const cfg = builtinRebus(rebusId);
   const [names, setNames] = useState('');
-  const [teamName, setTeamName] = useState(() => randomTeamName());
-  const [icon, setIcon] = useState(() => randomTeamIcon());
+  const [teamName, setTeamName] = useState(() => randomTeamName([], builtinRebus(leaderBuiltinId(leader))));
+  const [icon, setIcon] = useState(() => randomTeamIcon([], builtinRebus(leaderBuiltinId(leader))));
+
+  const rebusOptions = useMemo(
+    () =>
+      (Object.keys(builtinRebuses) as BuiltinRebusId[]).map((id) => ({
+        id,
+        label: `${builtinRebuses[id].map.homeEmoji} ${builtinRebuses[id].shortName}`,
+      })),
+    [],
+  );
+
+  function chooseRebus(id: BuiltinRebusId) {
+    if (id === rebusId) return;
+    setRebusId(id);
+    const next = builtinRebus(id);
+    setTeamName(randomTeamName([], next));
+    setIcon(randomTeamIcon([], next));
+  }
 
   function startSolo() {
     const members: Participant[] = names
@@ -23,10 +45,11 @@ export function StartScreen() {
     const payload: TeamLinkPayload = {
       v: 1,
       kind: 'team',
-      eventName: gameConfig.eventName,
-      team: { id: uid(), name: teamName.trim() || 'Øyprøvelaget', icon, members },
-      order: [...gameConfig.posts.map((p) => p.number)],
-      finalCode: gameConfig.defaultFinalCode,
+      eventName: cfg.eventName,
+      team: { id: uid(), name: teamName.trim() || 'Rebuslaget', icon, members },
+      order: [...cfg.posts.map((p) => p.number)],
+      finalCode: cfg.defaultFinalCode,
+      builtin: rebusId !== 'standard' ? rebusId : undefined,
     };
     teamStore.set({
       setup: payload,
@@ -55,7 +78,7 @@ export function StartScreen() {
         <div className="card stack">
           <h2>📱 Kun denne telefonen</h2>
           <p className="small muted">
-            Spill hele øyprøven på én telefon – perfekt for én familie eller for å teste spillet.
+            Spill hele rebusen på én telefon – perfekt for én familie eller for å teste spillet.
           </p>
           <button className="btn btn-primary btn-big" onClick={() => setMode('solo')}>
             Lag et lag nå 🎉
@@ -70,6 +93,19 @@ export function StartScreen() {
     <div className="screen">
       <h1 className="center">Lag laget deres</h1>
       <div className="card stack">
+        <label className="small"><strong>Hvilken rebus?</strong></label>
+        <div className="row-wrap">
+          {rebusOptions.map((o) => (
+            <button
+              key={o.id}
+              className={`chip chip-btn ${rebusId === o.id ? 'chip-active' : ''}`}
+              onClick={() => chooseRebus(o.id)}
+              aria-pressed={rebusId === o.id}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
         <label className="small" htmlFor="teamname"><strong>Lagnavn</strong></label>
         <div className="row">
           <input
@@ -81,7 +117,7 @@ export function StartScreen() {
           />
           <button
             className="btn btn-small btn-sun"
-            onClick={() => setTeamName(randomTeamName([teamName]))}
+            onClick={() => setTeamName(randomTeamName([teamName], cfg))}
             aria-label="Trekk nytt lagnavn"
           >
             🎲
@@ -89,7 +125,7 @@ export function StartScreen() {
         </div>
         <label className="small"><strong>Lagikon</strong></label>
         <div className="row-wrap">
-          {gameConfig.teamIcons.map((i) => (
+          {cfg.teamIcons.map((i) => (
             <button
               key={i}
               className={`chip chip-btn ${icon === i ? 'chip-active' : ''}`}
@@ -106,7 +142,7 @@ export function StartScreen() {
           rows={3}
           value={names}
           onChange={(e) => setNames(e.target.value)}
-          placeholder={'Emil\nIsak\nJenny'}
+          placeholder={cfg.home.namesPlaceholder}
         />
         <button className="btn btn-primary btn-big" onClick={startSolo}>
           Til sikkerhetssjekken ✅

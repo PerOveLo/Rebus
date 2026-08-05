@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameConfig, isValidCode } from '../../config/gameConfig';
+import { isValidCode } from '../../config/gameConfig';
+import { builtinRebus } from '../../config/rebuses';
+import { leaderConfig, leaderCustomRebus, leaderPosts } from '../../services/personalize';
 import { defaultLeaderState, leaderStore, teamStore, uid } from '../../services/storage';
 import type { LeaderState, TeamLinkPayload } from '../../types';
 
 export function SettingsTab() {
   const state = leaderStore.useStore();
   const navigate = useNavigate();
+  // Poster og korte spill følger rebusen som er valgt under 🎪 Rebus.
+  const cfg = leaderConfig(state);
+  const posts = leaderPosts(state);
+  const isCustom = leaderCustomRebus(state) != null;
   const [showJson, setShowJson] = useState(false);
   const [jsonText, setJsonText] = useState('');
   const [jsonMsg, setJsonMsg] = useState<string | null>(null);
@@ -32,19 +38,20 @@ export function SettingsTab() {
   }
 
   function applyShortGame() {
-    setSetting('enabledPosts', [...gameConfig.shortGamePosts]);
+    setSetting('enabledPosts', [...cfg.shortGamePosts]);
   }
 
   function applyFullGame() {
-    setSetting('enabledPosts', gameConfig.posts.map((p) => p.number));
+    setSetting('enabledPosts', posts.map((p) => p.number));
   }
 
   // Lag et testlag på denne telefonen og hopp rett til valgt post.
   function testPost(num: number) {
+    const custom = leaderCustomRebus(state);
     const payload: TeamLinkPayload = {
       v: 1,
       kind: 'team',
-      eventName: gameConfig.eventName,
+      eventName: custom?.name ?? cfg.eventName,
       team: {
         id: uid(),
         name: 'Testlaget',
@@ -54,11 +61,9 @@ export function SettingsTab() {
       order: [...state.settings.enabledPosts],
       finalCode: isValidCode(state.settings.finalCode)
         ? state.settings.finalCode
-        : gameConfig.defaultFinalCode,
-      custom:
-        state.settings.activeRebus === 'custom' && state.customRebus
-          ? state.customRebus
-          : undefined,
+        : cfg.defaultFinalCode,
+      custom,
+      builtin: !custom && cfg.id !== 'standard' ? cfg.id : undefined,
       mapOverrides: Object.keys(state.mapOverrides).length > 0 ? state.mapOverrides : undefined,
     };
     teamStore.set({
@@ -87,7 +92,19 @@ export function SettingsTab() {
       const defaults = defaultLeaderState();
       const merged = { ...defaults, ...parsed, settings: { ...defaults.settings, ...parsed.settings } };
       // Saner ugyldige verdier så importen aldri kan gi hvit skjerm.
-      const validNumbers = new Set(gameConfig.posts.map((p) => p.number));
+      if (
+        merged.settings.activeRebus != null &&
+        !(merged.settings.activeRebus === 'custom'
+          ? merged.customRebus != null
+          : builtinRebus(merged.settings.activeRebus).id === merged.settings.activeRebus)
+      ) {
+        merged.settings.activeRebus = 'standard';
+      }
+      const importedPosts =
+        merged.settings.activeRebus === 'custom' && merged.customRebus
+          ? merged.customRebus.posts
+          : builtinRebus(merged.settings.activeRebus).posts;
+      const validNumbers = new Set(importedPosts.map((p) => p.number));
       const enabled = Array.isArray(merged.settings.enabledPosts)
         ? merged.settings.enabledPosts.filter((n): n is number => typeof n === 'number' && validNumbers.has(n))
         : defaults.settings.enabledPosts;
@@ -150,15 +167,17 @@ export function SettingsTab() {
       <div className="card stack">
         <h2>Poster</h2>
         <div className="row">
-          <button className="btn btn-small btn-sun" onClick={applyShortGame}>
-            ⏱️ Kort spill ({gameConfig.shortGamePosts.length} poster)
-          </button>
+          {!isCustom && (
+            <button className="btn btn-small btn-sun" onClick={applyShortGame}>
+              ⏱️ Kort spill ({cfg.shortGamePosts.length} poster)
+            </button>
+          )}
           <button className="btn btn-small btn-ghost" onClick={applyFullGame}>
-            Alle 15
+            Alle {posts.length}
           </button>
         </div>
         <div className="row-wrap">
-          {gameConfig.posts.map((p) => {
+          {posts.map((p) => {
             const on = state.settings.enabledPosts.includes(p.number);
             return (
               <button

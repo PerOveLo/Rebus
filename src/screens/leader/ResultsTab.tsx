@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameConfig } from '../../config/gameConfig';
 import { QRScanner } from '../../components/QRScanner';
+import { leaderConfig } from '../../services/personalize';
 import { leaderStore, uid } from '../../services/storage';
 import { decodeResult } from '../../services/share';
 import { computeAwards } from '../../services/scoring';
@@ -84,7 +84,7 @@ export function ResultsTab() {
     ];
     demo.forEach(([name, icon, total], i) => {
       const cats: Partial<Record<Category, number>> = {};
-      gameConfig.categories.forEach((c, ci) => {
+      leaderConfig(state).categories.forEach((c, ci) => {
         cats[c] = 100 + ((i * 37 + ci * 53) % 160);
       });
       addResult({
@@ -113,7 +113,7 @@ export function ResultsTab() {
   }
 
   const sorted = [...state.importedResults].sort((a, b) => b.total - a.total);
-  const awards = computeAwards(state.importedResults);
+  const awards = computeAwards(state.importedResults, leaderConfig(state));
 
   return (
     <div className="stack">

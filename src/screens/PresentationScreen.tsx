@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Confetti } from '../components/Confetti';
+import { leaderConfig } from '../services/personalize';
 import { leaderStore } from '../services/storage';
 import { computeAwards } from '../services/scoring';
 
@@ -10,7 +11,8 @@ export function PresentationScreen() {
   const state = leaderStore.useStore();
   const [slide, setSlide] = useState(0);
 
-  const awards = useMemo(() => computeAwards(state.importedResults), [state.importedResults]);
+  const cfg = leaderConfig(state);
+  const awards = useMemo(() => computeAwards(state.importedResults, cfg), [state.importedResults, cfg]);
   const sorted = useMemo(
     () => [...state.importedResults].sort((a, b) => b.total - a.total),
     [state.importedResults],
@@ -56,10 +58,12 @@ export function PresentationScreen() {
   if (slide === 0) {
     return wrapper(
       <>
-        <div style={{ fontSize: '4rem' }} aria-hidden="true">🏝️</div>
-        <h1 style={{ fontSize: 'clamp(2rem, 6vw, 4rem)' }}>Operasjon Skylleviga</h1>
+        <div style={{ fontSize: '4rem' }} aria-hidden="true">
+          {cfg.home.theme === 'birthday' ? '🎂' : '🏝️'}
+        </div>
+        <h1 style={{ fontSize: 'clamp(2rem, 6vw, 4rem)' }}>{cfg.home.kicker}</h1>
         <p style={{ fontSize: 'clamp(1.1rem, 3vw, 1.8rem)', opacity: 0.85 }}>
-          Den store øyprøven – resultatene!
+          {cfg.home.title} – resultatene!
         </p>
       </>,
       true,
@@ -113,12 +117,12 @@ export function PresentationScreen() {
 
   return wrapper(
     <>
-      <div style={{ fontSize: '4rem' }} aria-hidden="true">🗝️🏡</div>
-      <h1 style={{ fontSize: 'clamp(1.8rem, 5vw, 3.4rem)' }}>
-        Velkommen som æresøyboere i Skylleviga!
-      </h1>
+      <div style={{ fontSize: '4rem' }} aria-hidden="true">
+        {cfg.home.theme === 'birthday' ? '🎁🎂' : '🗝️🏡'}
+      </div>
+      <h1 style={{ fontSize: 'clamp(1.8rem, 5vw, 3.4rem)' }}>{cfg.finale.presentationOutro}</h1>
       <p style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', opacity: 0.85 }}>
-        Tunnelen står åpen. Vaflene er varme. Jenny sover fortsatt. 💤
+        {cfg.finale.presentationJoke}
       </p>
     </>,
     true,

@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { activeStory } from '../services/personalize';
+import { activeConfig, activeCustomRebus, activeStory } from '../services/personalize';
 import { TunnelIntro } from '../components/TunnelIntro';
-import { teamStore } from '../services/storage';
+import { BirthdayIntro } from '../components/BirthdayIntro';
+import { leaderStore, teamStore } from '../services/storage';
 
+// Forsiden tilpasser seg den aktive rebusen: Skylleviga, Lydias bursdag
+// eller en egen generert rebus.
 export function HomeScreen() {
   const navigate = useNavigate();
   const progress = teamStore.useStore();
+  leaderStore.useStore(); // re-render når spillleder bytter rebus
   const [storyOpen, setStoryOpen] = useState(false);
+
+  const cfg = activeConfig();
+  const custom = activeCustomRebus();
+  const kicker = custom ? 'FAMILIEREBUS' : cfg.home.kicker;
+  const title = custom?.name ?? cfg.home.title;
 
   const hasActiveTeam = progress != null && progress.safetyConfirmed;
 
@@ -15,12 +24,16 @@ export function HomeScreen() {
     <div className="screen">
       <div className="center" style={{ marginTop: 8 }}>
         <div className="small muted" style={{ letterSpacing: '0.14em', fontWeight: 700 }}>
-          OPERASJON SKYLLEVIGA
+          {kicker}
         </div>
-        <h1 style={{ fontSize: '2rem' }}>Den store øyprøven</h1>
+        <h1 style={{ fontSize: '2rem' }}>{title}</h1>
       </div>
 
-      <TunnelIntro />
+      {cfg.home.theme === 'birthday' ? (
+        <BirthdayIntro messages={cfg.intro.loadingMessages} />
+      ) : (
+        <TunnelIntro />
+      )}
 
       {hasActiveTeam ? (
         <div className="card stack center">
@@ -29,12 +42,12 @@ export function HomeScreen() {
             <strong>{progress.setup.team.name}</strong> er allerede i gang!
           </p>
           <button className="btn btn-primary btn-big" onClick={() => navigate('/play')}>
-            Fortsett øyprøven 🏝️
+            {cfg.home.continueLabel}
           </button>
         </div>
       ) : (
         <button className="btn btn-primary btn-big" onClick={() => navigate('/start')}>
-          Start øyprøven 🏝️
+          {cfg.home.startLabel}
         </button>
       )}
 

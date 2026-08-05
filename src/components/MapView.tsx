@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { gameConfig } from '../config/gameConfig';
+import { customMapKey } from '../config/rebuses';
+import { activeBuiltinId, activeConfig } from '../services/personalize';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import type { MapPos } from '../types';
 
@@ -14,18 +15,15 @@ export interface MapViewProps {
   onMove?: (postNumber: number, pos: MapPos) => void;
   onSelect?: (postNumber: number) => void;
   symbols?: Record<number, string>; // overstyr postsymboler (egen rebus)
+  mapImage?: string; // overstyr kartbildet (spillleder-siden)
 }
-
-const SYMBOLS: Record<number, string> = Object.fromEntries(
-  gameConfig.posts.map((p) => [p.number, p.symbol]),
-);
 
 export function distanceLabel(from: MapPos, to: MapPos): string {
   const d = Math.hypot(to.x - from.x, to.y - from.y);
-  const t = gameConfig.map.distanceThresholds;
-  if (d <= t.short) return gameConfig.map.distanceLabels.short;
-  if (d <= t.medium) return gameConfig.map.distanceLabels.medium;
-  return gameConfig.map.distanceLabels.long;
+  const { distanceThresholds: t, distanceLabels } = activeConfig().map;
+  if (d <= t.short) return distanceLabels.short;
+  if (d <= t.medium) return distanceLabels.medium;
+  return distanceLabels.long;
 }
 
 export function directionDeg(from: MapPos, to: MapPos): number {
@@ -42,15 +40,21 @@ export function MapView({
   onMove,
   onSelect,
   symbols,
+  mapImage,
 }: MapViewProps) {
   const [imgOk, setImgOk] = useState(true);
   const frameRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<number | null>(null);
   const reduced = useReducedMotion();
 
-  // Spillleder kan laste opp eget kartbilde (lagres lokalt på telefonen).
-  const [customImg] = useState(() => localStorage.getItem('skylleviga:custom-map'));
-  const mapSrc = customImg ?? `${import.meta.env.BASE_URL}${gameConfig.map.image}`;
+  const cfg = activeConfig();
+  const fallbackSymbols: Record<number, string> = Object.fromEntries(
+    cfg.posts.map((p) => [p.number, p.symbol]),
+  );
+  // Spillleder kan laste opp eget kartbilde (lagres lokalt på telefonen,
+  // per rebus). Ellers brukes rebusens innebygde kart.
+  const [customImg] = useState(() => localStorage.getItem(customMapKey(activeBuiltinId())));
+  const mapSrc = mapImage ?? customImg ?? `${import.meta.env.BASE_URL}${cfg.map.image}`;
 
   function posFromEvent(e: ReactPointerEvent): MapPos | null {
     const el = frameRef.current;
@@ -87,7 +91,7 @@ export function MapView({
       {imgOk ? (
         <img
           src={mapSrc}
-          alt="Kart over Skylleviga"
+          alt={`Kart for ${cfg.shortName}`}
           className="map-img"
           onError={() => setImgOk(false)}
           draggable={false}
@@ -97,17 +101,28 @@ export function MapView({
           <span style={{ fontSize: '2.4rem' }}>🗺️</span>
           <strong>Kartbildet mangler</strong>
           <span className="small">
-            Legg satellittbildet i <code>public/skylleviga-kart.jpg</code> – spillet fungerer fint uten.
+            Legg kartbildet i <code>public/{cfg.map.image}</code> – spillet fungerer fint uten.
           </span>
         </div>
       )}
 
-      {/* Pynt: skyer, bølger og tunnel i kantene */}
-      <div aria-hidden="true" style={{ position: 'absolute', top: 6, left: 10, fontSize: '1.6rem', opacity: 0.9 }} className={reduced ? '' : 'floaty'}>☁️</div>
-      <div aria-hidden="true" style={{ position: 'absolute', top: 14, right: 14, fontSize: '1.2rem', opacity: 0.9 }} className={reduced ? '' : 'floaty'}>☁️</div>
-      <div aria-hidden="true" style={{ position: 'absolute', bottom: 8, left: 12, fontSize: '1.3rem' }}>🌊</div>
-      <div aria-hidden="true" style={{ position: 'absolute', bottom: 8, right: 12, fontSize: '1.3rem' }}>🌿</div>
-      <div aria-hidden="true" style={{ position: 'absolute', top: '46%', left: 2, fontSize: '1.4rem' }}>🚇</div>
+      {/* Pynt i kantene – følger rebusens tema */}
+      {cfg.home.theme === 'birthday' ? (
+        <>
+          <div aria-hidden="true" style={{ position: 'absolute', top: 6, left: 10, fontSize: '1.6rem', opacity: 0.9 }} className={reduced ? '' : 'floaty'}>🎈</div>
+          <div aria-hidden="true" style={{ position: 'absolute', top: 14, right: 14, fontSize: '1.2rem', opacity: 0.9 }} className={reduced ? '' : 'floaty'}>🎈</div>
+          <div aria-hidden="true" style={{ position: 'absolute', bottom: 8, left: 12, fontSize: '1.3rem' }}>🧸</div>
+          <div aria-hidden="true" style={{ position: 'absolute', bottom: 8, right: 12, fontSize: '1.3rem' }}>🎉</div>
+        </>
+      ) : (
+        <>
+          <div aria-hidden="true" style={{ position: 'absolute', top: 6, left: 10, fontSize: '1.6rem', opacity: 0.9 }} className={reduced ? '' : 'floaty'}>☁️</div>
+          <div aria-hidden="true" style={{ position: 'absolute', top: 14, right: 14, fontSize: '1.2rem', opacity: 0.9 }} className={reduced ? '' : 'floaty'}>☁️</div>
+          <div aria-hidden="true" style={{ position: 'absolute', bottom: 8, left: 12, fontSize: '1.3rem' }}>🌊</div>
+          <div aria-hidden="true" style={{ position: 'absolute', bottom: 8, right: 12, fontSize: '1.3rem' }}>🌿</div>
+          <div aria-hidden="true" style={{ position: 'absolute', top: '46%', left: 2, fontSize: '1.4rem' }}>🚇</div>
+        </>
+      )}
 
       {/* Stiplet rute fra forrige til neste post */}
       {from && to && (
@@ -149,13 +164,13 @@ export function MapView({
           >
             <span className="map-pin-dot">{done ? '✓' : num}</span>
             {(isNext || editable) && (
-              <span style={{ fontSize: '1.05rem', marginTop: 1, textShadow: '0 1px 3px #fff' }}>{(symbols ?? SYMBOLS)[num]}</span>
+              <span style={{ fontSize: '1.05rem', marginTop: 1, textShadow: '0 1px 3px #fff' }}>{(symbols ?? fallbackSymbols)[num]}</span>
             )}
           </button>
         );
       })}
 
-      {/* Festhus ved start/mål */}
+      {/* Festhus/kake ved start/mål */}
       {positions[15] && (
         <span
           aria-hidden="true"
@@ -169,7 +184,7 @@ export function MapView({
             textShadow: '0 1px 4px rgba(255,255,255,0.9)',
           }}
         >
-          🏡
+          {cfg.map.homeEmoji}
         </span>
       )}
     </div>

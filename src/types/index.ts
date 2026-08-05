@@ -8,7 +8,13 @@ export type Category =
   | 'Redningsevne'
   | 'Øykunnskap'
   | 'Gründerkraft'
-  | 'Stillhet';
+  | 'Stillhet'
+  | 'Familiekunnskap'
+  | 'Fart';
+
+// Innebygde rebuser som følger med appen (i motsetning til genererte
+// egenrebuser, som reiser med i laglenken).
+export type BuiltinRebusId = 'standard' | 'lydia';
 
 export type GameType =
   | 'tunnel-run'
@@ -29,7 +35,11 @@ export type GameType =
   | 'simon'
   | 'whack'
   | 'balloon'
-  | 'quiz-combo';
+  | 'quiz-combo'
+  | 'family-quiz'
+  | 'who-said-it'
+  | 'true-false'
+  | 'speed-quiz';
 
 export interface MapPos {
   x: number; // prosent fra venstre (0-100)
@@ -127,6 +137,9 @@ export interface TeamLinkPayload {
   center?: GeoPos;
   // Egen rebus: hele innholdet følger med i lenken.
   custom?: CustomRebusPayload;
+  // Innebygd rebus (utenom standard): bare id-en trengs i lenken,
+  // innholdet ligger i appen.
+  builtin?: BuiltinRebusId;
 }
 
 export interface PostResult {
@@ -189,7 +202,51 @@ export interface LeaderSettings {
   rotateStarts: boolean;
   teamCount: number;
   useGeoMap?: boolean; // GPS-kart i stedet for bildekart
-  activeRebus?: 'standard' | 'custom';
+  activeRebus?: BuiltinRebusId | 'custom';
+}
+
+// Felles fasong for de innebygde rebusene (Skylleviga, Lydias bursdag …).
+// gameConfig.ts og lydiaConfig.ts oppfyller begge denne.
+export interface BuiltinRebusConfig {
+  id: BuiltinRebusId;
+  eventName: string;
+  shortName: string;
+  home: {
+    kicker: string; // liten overskrift på forsiden
+    title: string;
+    startLabel: string;
+    continueLabel: string;
+    namesPlaceholder: string; // eksempelnavn i «Kun denne telefonen»
+    theme: string; // 'island' | 'birthday' – velger forsideanimasjonen
+  };
+  symbolsTitle: string; // f.eks. «Øysymboler» / «Bursdagssymboler»
+  intro: { story: string; loadingMessages: string[] };
+  defaultFinalCode: string;
+  finaleSymbolPosts: number[];
+  shortGamePosts: number[];
+  map: {
+    image: string;
+    homeEmoji: string; // tegnes over finaleposten på bildekartet
+    distanceLabels: { short: string; medium: string; long: string };
+    distanceThresholds: { short: number; medium: number };
+    distanceJoke: string;
+  };
+  safetyChecklist: string[];
+  teamIcons: string[];
+  suggestedTeamNames: string[];
+  teamNameWords: { adjectives: string[]; nouns: string[] };
+  categories: Category[];
+  awards: { id: string; title: string; category: Category }[];
+  finale: {
+    solvedHeading: string;
+    solvedText: string;
+    celebrationHeading: string;
+    everyoneAward: { title: string; detail: string };
+    unsungAward: { title: string; detail: string };
+    presentationOutro: string;
+    presentationJoke: string;
+  };
+  posts: PostConfig[];
 }
 
 export interface LeaderState {

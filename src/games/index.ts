@@ -20,6 +20,10 @@ import { SimonGame } from './SimonGame';
 import { WhackMoleGame } from './WhackMoleGame';
 import { BalloonPumpGame } from './BalloonPumpGame';
 import { QuizComboGame } from './QuizComboGame';
+import { FamilyQuizGame } from './FamilyQuizGame';
+import { WhoSaidItGame } from './WhoSaidItGame';
+import { TrueFalseGame } from './TrueFalseGame';
+import { SpeedQuizGame } from './SpeedQuizGame';
 
 export const games: Record<GameType, ComponentType<GameProps>> = {
   'tunnel-run': TunnelRunGame,
@@ -41,4 +45,8 @@ export const games: Record<GameType, ComponentType<GameProps>> = {
   'whack': WhackMoleGame,
   'balloon': BalloonPumpGame,
   'quiz-combo': QuizComboGame,
+  'family-quiz': FamilyQuizGame,
+  'who-said-it': WhoSaidItGame,
+  'true-false': TrueFalseGame,
+  'speed-quiz': SpeedQuizGame,
 };

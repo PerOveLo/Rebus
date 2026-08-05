@@ -23,7 +23,7 @@ export function JoinScreen() {
     return (
       <div className="screen center stack">
         <span className="big-emoji" aria-hidden="true">🤔</span>
-        <p>Denne lenken forsto ikke øyrådet. Be spillleder om en ny QR-kode.</p>
+        <p>Denne lenken så rar ut. Be spillleder om en ny QR-kode eller lenke.</p>
         <button className="btn" onClick={() => navigate('/')}>Til forsiden</button>
       </div>
     );

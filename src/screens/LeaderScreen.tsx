@@ -15,7 +15,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'people', label: '👥 Deltakere' },
   { id: 'teams', label: '🚩 Lag' },
   { id: 'map', label: '🗺️ Kart' },
-  { id: 'personal', label: '🪄 Ny rebus' },
+  { id: 'personal', label: '🎪 Rebus' },
   { id: 'results', label: '🏆 Resultater' },
   { id: 'settings', label: '⚙️ Oppsett' },
 ];

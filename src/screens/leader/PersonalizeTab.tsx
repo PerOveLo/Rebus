@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { leaderStore } from '../../services/storage';
+import { builtinRebuses } from '../../config/rebuses';
+import { leaderStore, teamStore } from '../../services/storage';
 import { CUSTOM_POST_COUNTS, generateFromTemplate, generateWithClaude } from '../../services/rebusBuilder';
-import type { RebusAnswers } from '../../types';
+import type { BuiltinRebusId, RebusAnswers } from '../../types';
 
 const API_KEY_STORAGE = 'skylleviga:anthropic-key';
 
@@ -32,8 +33,8 @@ const EMPTY: RebusAnswers = {
   place: '', groupName: '', people: '', funFacts: '', knownFor: '', insideJoke: '', food: '', placeFact: '',
 };
 
-// «Lag ny rebus»: Skylleviga-rebusen består urørt – her bygger spillleder
-// en helt egen rebus for sin egen gjeng, generert fra svarene under.
+// Rebus-fanen: velg hvilken rebus festen skal bruke (Skylleviga, Lydias
+// bursdag eller en egen generert), og lag nye rebuser med Claude.
 export function PersonalizeTab() {
   const state = leaderStore.useStore();
   const [answers, setAnswers] = useState<RebusAnswers>(state.rebusAnswers ?? EMPTY);
@@ -44,12 +45,47 @@ export function PersonalizeTab() {
 
   const custom = state.customRebus;
   const isActive = state.settings.activeRebus === 'custom' && custom != null;
+  const activeId = state.settings.activeRebus ?? 'standard';
+
+  // Bytt aktiv rebus: postene følger med, og finalekoden byttes bare hvis
+  // spillleder ikke har satt en egen.
+  function selectRebus(id: BuiltinRebusId | 'custom') {
+    leaderStore.update((s) => {
+      if (id === 'custom' && !s.customRebus) return s;
+      const posts = id === 'custom' ? s.customRebus!.posts : builtinRebuses[id].posts;
+      const defaultCodes = Object.values(builtinRebuses).map((c) => c.defaultFinalCode);
+      const finalCode =
+        id !== 'custom' && defaultCodes.includes(s.settings.finalCode)
+          ? builtinRebuses[id].defaultFinalCode
+          : s.settings.finalCode;
+      return {
+        ...s,
+        settings: {
+          ...s.settings,
+          activeRebus: id,
+          finalCode,
+          enabledPosts: posts.map((p) => p.number),
+        },
+      };
+    });
+    // Rydd bort spillleders eget testlag, så forsiden følger den nye
+    // rebusen. Ekte lag røres aldri.
+    const t = teamStore.get();
+    if (t && t.setup.team.name === 'Testlaget' && t.setup.team.icon === '🧪') {
+      teamStore.set(null);
+    }
+  }
 
   function setField(key: keyof RebusAnswers, value: string) {
     setAnswers((a) => ({ ...a, [key]: value }));
   }
 
   const filled = answers.place.trim() && answers.people.trim();
+
+  const builtinChoices = (Object.keys(builtinRebuses) as BuiltinRebusId[]).map((id) => ({
+    id,
+    cfg: builtinRebuses[id],
+  }));
 
   async function generate(useAi: boolean) {
     setError(null);
@@ -67,38 +103,62 @@ export function PersonalizeTab() {
     }
   }
 
-  function activate() {
-    leaderStore.update((s) =>
-      s.customRebus
-        ? {
-            ...s,
-            settings: {
-              ...s.settings,
-              activeRebus: 'custom',
-              enabledPosts: s.customRebus.posts.map((p) => p.number),
-            },
-          }
-        : s,
-    );
-  }
-
-  function deactivate() {
-    leaderStore.update((s) => ({
-      ...s,
-      settings: {
-        ...s.settings,
-        activeRebus: 'standard',
-        enabledPosts: Array.from({ length: 15 }, (_, i) => i + 1),
-      },
-    }));
-  }
-
   return (
     <div className="stack">
       <div className="card stack">
+        <h2>🎪 Hvilken rebus skal brukes?</h2>
+        <p className="small muted">
+          Valget bestemmer poster, kart og forside – både for nye laglenker og på denne telefonen.
+        </p>
+        {builtinChoices.map(({ id, cfg }) => (
+          <button
+            key={id}
+            className={`card card-soft stack ${activeId === id ? 'pop-in' : ''}`}
+            onClick={() => selectRebus(id)}
+            aria-pressed={activeId === id}
+            style={{
+              textAlign: 'left',
+              cursor: 'pointer',
+              border: activeId === id ? '3px solid var(--grass)' : '3px solid transparent',
+              gap: 4,
+            }}
+          >
+            <div className="spread">
+              <strong>
+                {cfg.map.homeEmoji} {cfg.shortName}
+              </strong>
+              {activeId === id && <span className="badge">✅ Aktiv</span>}
+            </div>
+            <span className="small muted">
+              {cfg.home.title} · {cfg.posts.length} poster
+            </span>
+          </button>
+        ))}
+        {custom && (
+          <button
+            className={`card card-soft stack ${isActive ? 'pop-in' : ''}`}
+            onClick={() => selectRebus('custom')}
+            aria-pressed={isActive}
+            style={{
+              textAlign: 'left',
+              cursor: 'pointer',
+              border: isActive ? '3px solid var(--grass)' : '3px solid transparent',
+              gap: 4,
+            }}
+          >
+            <div className="spread">
+              <strong>🪄 {custom.name}</strong>
+              {isActive && <span className="badge">✅ Aktiv</span>}
+            </div>
+            <span className="small muted">Egen generert rebus · {custom.posts.length} poster</span>
+          </button>
+        )}
+      </div>
+
+      <div className="card stack">
         <h2>🪄 Lag ny rebus</h2>
         <p className="small muted">
-          Skylleviga-rebusen består som den er. Her lager du en helt egen rebus for din gjeng –
+          De innebygde rebusene består som de er. Her lager du en helt egen rebus for din gjeng –
           alle spørsmål og oppgaver skrives ut fra svarene dine. Minispillene er de samme gøyale
           som i originalen, og hver post har voksenbonus der barna dømmer.
         </p>
@@ -186,16 +246,16 @@ export function PersonalizeTab() {
             ))}
           </div>
           {!isActive ? (
-            <button className="btn btn-grass btn-big" onClick={activate}>
+            <button className="btn btn-grass btn-big" onClick={() => selectRebus('custom')}>
               Bruk denne rebusen 🚀
             </button>
           ) : (
-            <button className="btn btn-ghost" onClick={deactivate}>
+            <button className="btn btn-ghost" onClick={() => selectRebus('standard')}>
               Bytt tilbake til Skylleviga-rebusen
             </button>
           )}
           <p className="small muted">
-            Når rebusen er aktiv, får nye laglenker denne i stedet for Skylleviga-versjonen.
+            Når rebusen er aktiv, får nye laglenker denne i stedet for de innebygde.
             Plasser postene under 🗺️ Kart (GPS-kartet fungerer perfekt til dette).
           </p>
         </div>
