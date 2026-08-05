@@ -1,6 +1,6 @@
 import { gameConfig } from '../config/gameConfig';
 import { findActivePost } from './personalize';
-import type { Category, TeamProgress, TeamResultPayload } from '../types';
+import type { BuiltinRebusConfig, Category, TeamProgress, TeamResultPayload } from '../types';
 
 export function totalScore(progress: TeamProgress): number {
   return Object.values(progress.results).reduce(
@@ -67,7 +67,11 @@ export interface AwardResult {
 }
 
 // Del ut titler slik at flere lag blir fremhevet – ikke bare vinneren.
-export function computeAwards(results: TeamResultPayload[]): AwardResult[] {
+// Titlene kommer fra den aktive rebusens config.
+export function computeAwards(
+  results: TeamResultPayload[],
+  cfg: BuiltinRebusConfig = gameConfig,
+): AwardResult[] {
   if (results.length === 0) return [];
   const awards: AwardResult[] = [];
   const winners = new Set<string>();
@@ -79,7 +83,7 @@ export function computeAwards(results: TeamResultPayload[]): AwardResult[] {
     return results.filter((r) => (r.categoryScores[cat] ?? 0) === bestVal);
   };
 
-  for (const award of gameConfig.awards) {
+  for (const award of cfg.awards) {
     if (award.id === 'honorary') continue; // alle får denne til slutt
     const best = bestIn(award.category);
     if (best.length > 0) {
@@ -96,16 +100,16 @@ export function computeAwards(results: TeamResultPayload[]): AwardResult[] {
   const unsung = results.filter((r) => !winners.has(r.teamId));
   if (unsung.length > 0) {
     awards.push({
-      title: 'Øyrådets hederspris',
+      title: cfg.finale.unsungAward.title,
       teamNames: unsung.map((r) => r.teamName),
-      detail: 'For stil, humør og upåklagelig øyholdning',
+      detail: cfg.finale.unsungAward.detail,
     });
   }
 
   awards.push({
-    title: 'Dagens æresøyboere',
+    title: cfg.finale.everyoneAward.title,
     teamNames: results.map((r) => r.teamName),
-    detail: 'Alle som fullførte øyprøven',
+    detail: cfg.finale.everyoneAward.detail,
   });
 
   return awards;

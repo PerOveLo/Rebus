@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { gameConfig, isValidCode } from '../config/gameConfig';
-import { activeCustomRebus, activeFinaleSymbolPosts, getActivePost } from '../services/personalize';
+import { isValidCode } from '../config/gameConfig';
+import { activeConfig, activeCustomRebus, activeFinaleSymbolPosts, getActivePost } from '../services/personalize';
 import { teamStore } from '../services/storage';
 import { Confetti } from '../components/Confetti';
 import type { GameProps } from './types';
@@ -11,7 +11,7 @@ import type { GameProps } from './types';
 export function FinaleCodeGame({ post, onComplete }: GameProps) {
   const progress = teamStore.useStore();
   const stored = progress?.setup.finalCode;
-  const code = isValidCode(stored) ? stored : gameConfig.defaultFinalCode;
+  const code = isValidCode(stored) ? stored : activeConfig().defaultFinalCode;
   const [entry, setEntry] = useState('');
   const [wrongCount, setWrongCount] = useState(0);
   const [shake, setShake] = useState(false);
@@ -46,12 +46,14 @@ export function FinaleCodeGame({ post, onComplete }: GameProps) {
   }
 
   if (solved) {
+    const custom = activeCustomRebus();
+    const finale = activeConfig().finale;
     return (
       <div className="stack center pop-in">
         <Confetti />
-        <span className="big-emoji" aria-hidden="true">🏡✨</span>
-        <h3>Huset lyser opp! Tunnelen åpner seg!</h3>
-        <p className="muted">Nøkkelen til {activeCustomRebus()?.place ?? 'Skylleviga'} er deres!</p>
+        <span className="big-emoji" aria-hidden="true">{custom ? '🏡✨' : `${activeConfig().map.homeEmoji}✨`}</span>
+        <h3>{custom ? 'Skatten er funnet! Alt lyser opp!' : finale.solvedHeading}</h3>
+        <p className="muted">{custom ? `Nøkkelen til ${custom.place} er deres!` : finale.solvedText}</p>
         <div style={{ fontSize: '3rem' }} aria-hidden="true" className="glow">🗝️</div>
       </div>
     );

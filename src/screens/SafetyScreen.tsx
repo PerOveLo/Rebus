@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { activeConfig } from '../services/personalize';
+import { activeConfig, activeCustomRebus } from '../services/personalize';
 import { teamStore } from '../services/storage';
 
 // Sikkerhetssjekk før start – alle punkter må hukes av.
 export function SafetyScreen() {
   const navigate = useNavigate();
   const progress = teamStore.useStore();
-  const items = activeConfig().safetyChecklist;
+  const cfg = activeConfig();
+  const items = cfg.safetyChecklist;
+  const startLabel = activeCustomRebus() ? 'Vi lover! Start rebusen 🚀' : `Vi lover! ${cfg.home.startLabel}`;
   const [checked, setChecked] = useState<boolean[]>(() => items.map(() => false));
 
   if (!progress) {
@@ -52,7 +54,7 @@ export function SafetyScreen() {
         </button>
       </div>
       <button className="btn btn-primary btn-big" disabled={!allChecked} onClick={start}>
-        Vi lover! Start øyprøven 🚀
+        {startLabel}
       </button>
     </div>
   );

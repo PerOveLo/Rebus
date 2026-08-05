@@ -1,5 +1,5 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
-import { gameConfig } from '../config/gameConfig';
+import { builtinRebus, isBuiltinRebusId } from '../config/rebuses';
 import type { TeamLinkPayload, TeamResultPayload } from '../types';
 
 // Laglenker og resultater deles som komprimerte strenger i URL/QR.
@@ -14,7 +14,13 @@ export function decodeTeamLink(data: string): TeamLinkPayload | null {
     const json = decompressFromEncodedURIComponent(data);
     if (!json) return null;
     const parsed = JSON.parse(json) as TeamLinkPayload;
-    const validNumbers = new Set(gameConfig.posts.map((p) => p.number));
+    // Ukjent innebygd rebus-id (f.eks. fra en nyere versjon av appen)
+    // avvises i stedet for å vise feil innhold.
+    if (parsed.builtin != null && !isBuiltinRebusId(parsed.builtin)) return null;
+    const posts = Array.isArray(parsed.custom?.posts)
+      ? parsed.custom.posts
+      : builtinRebus(parsed.builtin).posts;
+    const validNumbers = new Set(posts.map((p) => p.number));
     if (
       parsed.v !== 1 ||
       parsed.kind !== 'team' ||

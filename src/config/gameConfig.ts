@@ -7,8 +7,20 @@ import type { Category, PostConfig } from '../types';
 // ============================================================
 
 export const gameConfig = {
+  id: 'standard' as const,
   eventName: 'Operasjon Skylleviga – Den store øyprøven',
   shortName: 'Skylleviga Hagefest',
+
+  home: {
+    kicker: 'OPERASJON SKYLLEVIGA',
+    title: 'Den store øyprøven',
+    startLabel: 'Start øyprøven 🏝️',
+    continueLabel: 'Fortsett øyprøven 🏝️',
+    namesPlaceholder: 'Emil\nIsak\nJenny',
+    theme: 'island',
+  },
+
+  symbolsTitle: 'Øysymboler',
 
   family: {
     hosts: ['Sjur', 'Ida'],
@@ -44,6 +56,7 @@ export const gameConfig = {
 
   map: {
     image: 'skylleviga-kart.jpg', // legges i public/
+    homeEmoji: '🏡',
     distanceLabels: {
       short: 'Kort vei',
       medium: 'Et lite stykke',
@@ -51,6 +64,7 @@ export const gameConfig = {
     },
     // Terskler i prosent av kartbildet (diagonalavstand).
     distanceThresholds: { short: 14, medium: 30 },
+    distanceJoke: 'Avstander er øy-omtrentlige, ikke målt med Sjur-meteren.',
   },
 
   safetyChecklist: [
@@ -96,6 +110,16 @@ export const gameConfig = {
     'Gründerkraft',
     'Stillhet',
   ] as Category[],
+
+  finale: {
+    solvedHeading: 'Huset lyser opp! Tunnelen åpner seg!',
+    solvedText: 'Nøkkelen til Skylleviga er deres!',
+    celebrationHeading: '🎉 Godkjente æresøyboere! 🎉',
+    everyoneAward: { title: 'Dagens æresøyboere', detail: 'Alle som fullførte øyprøven' },
+    unsungAward: { title: 'Øyrådets hederspris', detail: 'For stil, humør og upåklagelig øyholdning' },
+    presentationOutro: 'Velkommen som æresøyboere i Skylleviga!',
+    presentationJoke: 'Tunnelen står åpen. Vaflene er varme. Jenny sover fortsatt. 💤',
+  },
 
   awards: [
     { id: 'sharpest', title: 'Øyas skarpeste hoder', category: 'Mattekraft' as Category },

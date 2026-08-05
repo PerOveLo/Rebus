@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Confetti } from '../components/Confetti';
 import { QRView } from '../components/QRView';
 import { TeamPass } from '../components/TeamPass';
+import { activeConfig, activeCustomRebus } from '../services/personalize';
 import { teamStore } from '../services/storage';
 import { buildResultPayload, categoryScores, minutesUsed, totalScore } from '../services/scoring';
 import { encodePayload } from '../services/share';
@@ -34,7 +35,9 @@ export function CelebrationScreen() {
   return (
     <div className="screen">
       <Confetti count={80} />
-      <h1 className="center pop-in">🎉 Godkjente æresøyboere! 🎉</h1>
+      <h1 className="center pop-in">
+        {activeCustomRebus() ? '🎉 Dere klarte hele rebusen! 🎉' : activeConfig().finale.celebrationHeading}
+      </h1>
       <TeamPass team={progress.setup.team} creations={progress.creations} stamped />
 
       <div className="card center stack">

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { gameConfig } from '../../config/gameConfig';
+import { customMapKey } from '../../config/rebuses';
 import { MapView } from '../../components/MapView';
 import { GeoMap } from '../../components/GeoMap';
+import { leaderBuiltinId, leaderConfig, leaderPosts } from '../../services/personalize';
 import { leaderStore } from '../../services/storage';
 import {
   DEFAULT_ADDRESS,
@@ -13,9 +14,8 @@ import type { GeocodeHit } from '../../services/geo';
 import type { GeoPos, MapPos } from '../../types';
 
 // Kartfanen har to moduser:
-// - Bildekart: eget kartbilde (public/skylleviga-kart.jpg) med prosentkoordinater.
+// - Bildekart: rebusens eget kartbilde med prosentkoordinater.
 // - GPS-kart: ekte kart med GPS-posisjoner, adressesøk og dra-og-slipp.
-const CUSTOM_MAP_KEY = 'skylleviga:custom-map';
 
 // Skaler ned og lagre opplastet kartbilde lokalt (maks ~1600px, JPEG).
 async function fileToDataUrl(file: File): Promise<string> {
@@ -31,18 +31,25 @@ async function fileToDataUrl(file: File): Promise<string> {
 export function MapTab() {
   const state = leaderStore.useStore();
   const [editing, setEditing] = useState(false);
-  const [hasCustomMap, setHasCustomMap] = useState(() => localStorage.getItem(CUSTOM_MAP_KEY) != null);
   const [mapVersion, setMapVersion] = useState(0);
   const [viewCenter, setViewCenter] = useState<GeoPos | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Kart og poster følger rebusen spillleder har valgt.
+  const cfg = leaderConfig(state);
+  const posts = leaderPosts(state);
+  const mapKey = customMapKey(leaderBuiltinId(state));
+  // Leses på nytt hver render – setMapVersion tvinger frem oppdatering.
+  const customImg = localStorage.getItem(mapKey);
+  const hasCustomMap = customImg != null;
+  const mapSrc = customImg ?? `${import.meta.env.BASE_URL}${cfg.map.image}`;
 
   async function uploadMap(file: File | null) {
     if (!file) return;
     setUploadError(null);
     try {
       const dataUrl = await fileToDataUrl(file);
-      localStorage.setItem(CUSTOM_MAP_KEY, dataUrl);
-      setHasCustomMap(true);
+      localStorage.setItem(mapKey, dataUrl);
       setMapVersion((v) => v + 1);
     } catch {
       setUploadError('Klarte ikke å lese bildet. Prøv et JPG- eller PNG-bilde.');
@@ -50,8 +57,7 @@ export function MapTab() {
   }
 
   function removeCustomMap() {
-    localStorage.removeItem(CUSTOM_MAP_KEY);
-    setHasCustomMap(false);
+    localStorage.removeItem(mapKey);
     setMapVersion((v) => v + 1);
   }
   const [address, setAddress] = useState(DEFAULT_ADDRESS);
@@ -69,8 +75,11 @@ export function MapTab() {
 
   // --- Bildekart ---
   const positions: Record<number, MapPos> = {};
-  for (const p of gameConfig.posts) positions[p.number] = { ...p.mapPos };
+  for (const p of posts) positions[p.number] = { ...p.mapPos };
   for (const [num, pos] of Object.entries(state.mapOverrides)) positions[Number(num)] = pos;
+  const postSymbols: Record<number, string> = Object.fromEntries(
+    posts.map((p) => [p.number, p.symbol]),
+  );
 
   function moveImage(postNumber: number, pos: MapPos) {
     leaderStore.update((s) => ({
@@ -140,10 +149,11 @@ export function MapTab() {
   const placedCount = enabled.filter((n) => geoOverrides[n]).length;
   const geoPosts = enabled
     .filter((n) => geoOverrides[n])
-    .map((n) => {
-      const post = gameConfig.posts.find((p) => p.number === n)!;
-      return { number: n, symbol: post.symbol, pos: geoOverrides[n] };
-    });
+    .map((n) => ({
+      number: n,
+      symbol: posts.find((p) => p.number === n)?.symbol ?? '📍',
+      pos: geoOverrides[n],
+    }));
 
   return (
     <div className="stack">
@@ -194,9 +204,9 @@ export function MapTab() {
           <div className="card stack">
             <h3>Eget kartbilde</h3>
             <p className="small muted">
-              Last opp ditt eget kart/flyfoto (skjermbilde fra karttjeneste funker fint). Bildet
+              Last opp ditt eget kart, plantegning eller flyfoto (skjermbilde funker fint). Bildet
               lagres kun på denne telefonen – lag som skal se det samme må bruke GPS-kartet,
-              eller så legges bildet i <code>public/skylleviga-kart.jpg</code> i repoet.
+              eller så legges bildet i <code>public/{cfg.map.image}</code> i repoet.
             </p>
             <input
               type="file"
@@ -212,9 +222,11 @@ export function MapTab() {
             {uploadError && <p className="small" style={{ color: 'var(--coral-dark)' }}>{uploadError}</p>}
           </div>
           <MapView
-            key={mapVersion}
+            key={`${mapKey}-${mapVersion}`}
             positions={positions}
-            visiblePosts={gameConfig.posts.map((p) => p.number)}
+            visiblePosts={posts.map((p) => p.number)}
+            symbols={postSymbols}
+            mapImage={mapSrc}
             editable={editing}
             onMove={moveImage}
           />

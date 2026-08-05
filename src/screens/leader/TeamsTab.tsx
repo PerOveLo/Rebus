@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { leaderConfig } from '../../services/personalize';
 import { leaderStore } from '../../services/storage';
 import { autoSplitTeams, buildTeamLink, randomTeamIcon, randomTeamName } from '../../services/teams';
 import { teamLinkUrl } from '../../services/share';
@@ -26,7 +27,7 @@ export function TeamsTab() {
   }, []);
 
   function distribute() {
-    const teams = autoSplitTeams(state.participants, state.settings.teamCount);
+    const teams = autoSplitTeams(state.participants, state.settings.teamCount, leaderConfig(state));
     leaderStore.update((s) => ({ ...s, teams }));
     if (reduced) {
       setRevealCount(Number.MAX_SAFE_INTEGER);
@@ -60,8 +61,8 @@ export function TeamsTab() {
         t.id === teamId
           ? {
               ...t,
-              name: randomTeamName(s.teams.map((x) => x.name)),
-              icon: randomTeamIcon(s.teams.map((x) => x.icon)),
+              name: randomTeamName(s.teams.map((x) => x.name), leaderConfig(s)),
+              icon: randomTeamIcon(s.teams.map((x) => x.icon), leaderConfig(s)),
             }
           : t,
       ),

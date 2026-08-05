@@ -40,13 +40,13 @@ export function PlayScreen() {
       }
     }
     return base;
-  }, [progress?.setup.mapOverrides, progress?.setup.custom]);
+  }, [progress?.setup.mapOverrides, progress?.setup.custom, progress?.setup.builtin]);
 
   const postSymbols = useMemo(() => {
     const map: Record<number, string> = {};
     for (const p of activePosts()) map[p.number] = p.symbol;
     return map;
-  }, [progress?.setup.custom]);
+  }, [progress?.setup.custom, progress?.setup.builtin]);
 
   const order = progress?.setup.order ?? [];
   const completedCount = order.filter((n) => progress?.results[n]).length;
@@ -151,7 +151,8 @@ export function PlayScreen() {
   } else {
     const from = prevNum != null ? positions[prevNum] : positions[currentNum];
     const to = positions[currentNum];
-    distanceText = `${prevNum != null ? distanceLabel(from, to) : activeConfig().map.distanceLabels.short} · Avstander er øy-omtrentlige, ikke målt med Sjur-meteren.`;
+    const mapCfg = activeConfig().map;
+    distanceText = `${prevNum != null ? distanceLabel(from, to) : mapCfg.distanceLabels.short} · ${mapCfg.distanceJoke}`;
     arrow = { deg: directionDeg(from, to) + 90, label: '' };
   }
 
@@ -285,7 +286,7 @@ export function PlayScreen() {
       )}
 
       <button className="btn btn-ghost" onClick={() => setSymbolsOpen((o) => !o)}>
-        🎒 Øysymboler ({progress.collectedSymbols.length}/{order.length})
+        🎒 {activeConfig().symbolsTitle} ({progress.collectedSymbols.length}/{order.length})
       </button>
       {symbolsOpen && (
         <div className="row-wrap pop-in" style={{ justifyContent: 'center' }}>

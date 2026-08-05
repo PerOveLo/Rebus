@@ -10,11 +10,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['skylleviga-kart.jpg', 'icon.svg'],
+      includeAssets: ['skylleviga-kart.jpg', 'lydia-kart.jpg', 'icon.svg'],
       manifest: {
-        name: 'Skylleviga Hagefest',
-        short_name: 'Skylleviga',
-        description: 'Skylleviga Hagefest',
+        name: 'Familierebus',
+        short_name: 'Rebus',
+        description: 'Familierebus',
         theme_color: '#0e7490',
         background_color: '#fff7e6',
         display: 'standalone',
