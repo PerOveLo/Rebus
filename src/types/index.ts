@@ -230,6 +230,8 @@ export interface BuiltinRebusConfig {
     distanceLabels: { short: string; medium: string; long: string };
     distanceThresholds: { short: number; medium: number };
     distanceJoke: string;
+    // Små stedsnavn tegnet på kartet (vises ikke på egne opplastede bilder).
+    labels?: { text: string; pos: MapPos }[];
   };
   safetyChecklist: string[];
   teamIcons: string[];

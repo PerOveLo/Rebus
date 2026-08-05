@@ -68,6 +68,15 @@ export const lydiaConfig: BuiltinRebusConfig = {
     },
     distanceThresholds: { short: 14, medium: 30 },
     distanceJoke: 'Avstander er målt i barnesteg – nøyaktighet garanteres ikke.',
+    labels: [
+      { text: 'Spisestua', pos: { x: 36, y: 26 } },
+      { text: 'Kjøkkenet', pos: { x: 33, y: 58 } },
+      { text: 'Kosekroken', pos: { x: 11, y: 44.5 } },
+      { text: 'Stua', pos: { x: 27, y: 68 } },
+      { text: 'TV-stua', pos: { x: 85, y: 66 } },
+      { text: 'Badet', pos: { x: 64, y: 86 } },
+      { text: 'Entré', pos: { x: 44, y: 84 } },
+    ],
   },
 
   safetyChecklist: [

@@ -232,6 +232,21 @@ input:focus, textarea:focus, select:focus {
   100% { transform: translateX(125vw) translateY(0) rotate(0deg); }
 }
 
+/* Romnavn på bildekartet */
+.map-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft, #4b5f6d);
+  background: rgba(255, 255, 255, 0.78);
+  padding: 1px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* Familiehendelser: figur som løper over skjermen med snakkeboble */
 .family-event {
   position: fixed;

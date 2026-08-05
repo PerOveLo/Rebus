@@ -124,6 +124,19 @@ export function MapView({
         </>
       )}
 
+      {/* Romnavn – bare på rebusens eget kartbilde, ikke egne opplastinger */}
+      {!mapSrc.startsWith('data:') &&
+        cfg.map.labels?.map((l) => (
+          <span
+            key={l.text}
+            className="map-label"
+            style={{ left: `${l.pos.x}%`, top: `${l.pos.y}%` }}
+            aria-hidden="true"
+          >
+            {l.text}
+          </span>
+        ))}
+
       {/* Stiplet rute fra forrige til neste post */}
       {from && to && (
         <svg
