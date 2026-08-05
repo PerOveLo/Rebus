@@ -547,7 +547,7 @@ export const lydiaConfig: BuiltinRebusConfig = {
         'Gratulerer! Familierådet (1 bamse, 2 racerbiler og 1 sovende baby) har enstemmig vedtatt at dere er ekte bursdagshelter.',
       islandSymbol: { id: 'bursdagsnokkel', name: 'Den store bursdagsnøkkelen', emoji: '🏆' },
       categories: ['Samarbeid', 'Familiekunnskap'],
-      mapPos: { x: 52, y: 45 },
+      mapPos: { x: 54, y: 52 },
       points: { main: 60, team: 20, bonus: 20, hintPenalty: 10 },
       data: {},
     },
