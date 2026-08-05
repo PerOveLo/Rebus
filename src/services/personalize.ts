@@ -71,7 +71,8 @@ export function activeFinaleSymbolPosts(): number[] {
 
 export function leaderBuiltinId(state: LeaderState): BuiltinRebusId {
   const id = state.settings.activeRebus;
-  return isBuiltinRebusId(id) ? id : 'standard';
+  if (id === 'custom') return 'standard'; // basisinnhold for egne rebuser
+  return isBuiltinRebusId(id) ? id : 'lydia'; // bursdagsrebusen er standard
 }
 
 export function leaderConfig(state: LeaderState): BuiltinRebusConfig {
@@ -86,4 +87,12 @@ export function leaderCustomRebus(state: LeaderState): CustomRebusPayload | unde
 
 export function leaderPosts(state: LeaderState): PostConfig[] {
   return leaderCustomRebus(state)?.posts ?? leaderConfig(state).posts;
+}
+
+// Aktive poster filtrert mot rebusen som faktisk er valgt – beskytter mot
+// at et gammelt oppsett peker på poster som ikke finnes i rebusen.
+export function leaderEnabledPosts(state: LeaderState): number[] {
+  const valid = new Set(leaderPosts(state).map((p) => p.number));
+  const filtered = state.settings.enabledPosts.filter((n) => valid.has(n));
+  return filtered.length > 0 ? filtered : [...valid];
 }

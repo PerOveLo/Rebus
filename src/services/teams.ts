@@ -1,5 +1,5 @@
 import { gameConfig, isValidCode } from '../config/gameConfig';
-import { leaderConfig, leaderCustomRebus } from './personalize';
+import { leaderConfig, leaderCustomRebus, leaderEnabledPosts } from './personalize';
 import { shortTeamLinkUrl, teamLinkUrl } from './share';
 import { uid } from './storage';
 import type {
@@ -82,17 +82,17 @@ export function buildPostOrder(enabledPosts: number[], teamIndex: number, rotate
 // kartet er urørt, ellers den fulle lenken med alt innhold.
 export function bestTeamUrl(state: LeaderState, team: Team, teamIndex: number): string {
   const cfg = leaderConfig(state);
+  const enabledPosts = leaderEnabledPosts(state);
   const geoOverrides = state.geoOverrides ?? {};
   const geoComplete =
-    (state.settings.useGeoMap ?? false) &&
-    state.settings.enabledPosts.every((n) => geoOverrides[n]);
+    (state.settings.useGeoMap ?? false) && enabledPosts.every((n) => geoOverrides[n]);
   const canShort =
     !leaderCustomRebus(state) && !geoComplete && Object.keys(state.mapOverrides).length === 0;
   if (!canShort) return teamLinkUrl(buildTeamLink(state, team, teamIndex));
 
-  const order = buildPostOrder(state.settings.enabledPosts, teamIndex, state.settings.rotateStarts);
+  const order = buildPostOrder(enabledPosts, teamIndex, state.settings.rotateStarts);
   const all = cfg.posts.map((p) => p.number).sort((a, b) => a - b);
-  const enabled = [...state.settings.enabledPosts].sort((a, b) => a - b);
+  const enabled = [...enabledPosts].sort((a, b) => a - b);
   const samePosts = enabled.length === all.length && enabled.every((n, idx) => n === all[idx]);
   return shortTeamLinkUrl({
     r: cfg.id,
@@ -110,18 +110,16 @@ export function buildTeamLink(
   teamIndex: number,
 ): TeamLinkPayload {
   const cfg = leaderConfig(state);
+  const enabledPosts = leaderEnabledPosts(state);
   const overrides: Record<number, MapPos> = state.mapOverrides;
-  const order = buildPostOrder(state.settings.enabledPosts, teamIndex, state.settings.rotateStarts);
+  const order = buildPostOrder(enabledPosts, teamIndex, state.settings.rotateStarts);
 
   // GPS-kartet brukes bare når alle aktive poster faktisk er plassert.
   const geoOverrides = state.geoOverrides ?? {};
   const geoComplete =
-    (state.settings.useGeoMap ?? false) &&
-    state.settings.enabledPosts.every((n) => geoOverrides[n]);
+    (state.settings.useGeoMap ?? false) && enabledPosts.every((n) => geoOverrides[n]);
   const geo = geoComplete
-    ? Object.fromEntries(
-        state.settings.enabledPosts.map((n) => [n, geoOverrides[n]]),
-      )
+    ? Object.fromEntries(enabledPosts.map((n) => [n, geoOverrides[n]]))
     : undefined;
 
   const custom = leaderCustomRebus(state);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isValidCode } from '../../config/gameConfig';
 import { builtinRebus } from '../../config/rebuses';
-import { leaderConfig, leaderCustomRebus, leaderPosts } from '../../services/personalize';
+import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderPosts } from '../../services/personalize';
 import { defaultLeaderState, leaderStore, teamStore, uid } from '../../services/storage';
 import type { LeaderState, TeamLinkPayload } from '../../types';
 
@@ -58,7 +58,7 @@ export function SettingsTab() {
         icon: '🧪',
         members: [{ id: uid(), name: 'Spillleder', isAdult: true }],
       },
-      order: [...state.settings.enabledPosts],
+      order: leaderEnabledPosts(state),
       finalCode: isValidCode(state.settings.finalCode)
         ? state.settings.finalCode
         : cfg.defaultFinalCode,
@@ -211,7 +211,7 @@ export function SettingsTab() {
           aktivt lag på telefonen.)
         </p>
         <div className="row-wrap">
-          {state.settings.enabledPosts.map((n) => (
+          {leaderEnabledPosts(state).map((n) => (
             <button key={n} className="chip chip-btn" onClick={() => testPost(n)}>
               Post {n}
             </button>

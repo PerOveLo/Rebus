@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { customMapKey } from '../../config/rebuses';
 import { MapView } from '../../components/MapView';
 import { GeoMap } from '../../components/GeoMap';
-import { leaderBuiltinId, leaderConfig, leaderPosts } from '../../services/personalize';
+import { leaderBuiltinId, leaderConfig, leaderEnabledPosts, leaderPosts } from '../../services/personalize';
 import { leaderStore } from '../../services/storage';
 import {
   DEFAULT_ADDRESS,
@@ -118,11 +118,11 @@ export function MapTab() {
         ...s,
         geoCenter: c,
         geoOverrides: {
-          ...scatterPosts(c, s.settings.enabledPosts),
+          ...scatterPosts(c, leaderEnabledPosts(s)),
           // behold poster som allerede er plassert manuelt
           ...Object.fromEntries(
             Object.entries(s.geoOverrides ?? {}).filter(([n]) =>
-              s.settings.enabledPosts.includes(Number(n)),
+              leaderEnabledPosts(s).includes(Number(n)),
             ),
           ),
         },
@@ -145,7 +145,7 @@ export function MapTab() {
     leaderStore.update((s) => ({ ...s, mapOverrides: {} }));
   }
 
-  const enabled = state.settings.enabledPosts;
+  const enabled = leaderEnabledPosts(state);
   const placedCount = enabled.filter((n) => geoOverrides[n]).length;
   const geoPosts = enabled
     .filter((n) => geoOverrides[n])
