@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { activeConfig, activePosts, findActivePost, getActivePost } from '../services/personalize';
+import { activeConfig, activeCustomRebus, activePosts, findActivePost, getActivePost } from '../services/personalize';
 import { MapView, directionDeg, distanceLabel } from '../components/MapView';
 import { GeoMap } from '../components/GeoMap';
 import { teamStore } from '../services/storage';
@@ -152,7 +152,11 @@ export function PlayScreen() {
     const from = prevNum != null ? positions[prevNum] : positions[currentNum];
     const to = positions[currentNum];
     const mapCfg = activeConfig().map;
-    distanceText = `${prevNum != null ? distanceLabel(from, to) : mapCfg.distanceLabels.short} · ${mapCfg.distanceJoke}`;
+    // Egen generert rebus skal ikke arve Skylleviga-vitsene.
+    const joke = activeCustomRebus()
+      ? 'Avstander er hjemmelagde og omtrentlige.'
+      : mapCfg.distanceJoke;
+    distanceText = `${prevNum != null ? distanceLabel(from, to) : mapCfg.distanceLabels.short} · ${joke}`;
     arrow = { deg: directionDeg(from, to) + 90, label: '' };
   }
 
