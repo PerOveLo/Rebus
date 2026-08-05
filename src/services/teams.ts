@@ -1,5 +1,6 @@
 import { gameConfig, isValidCode } from '../config/gameConfig';
 import { leaderConfig, leaderCustomRebus } from './personalize';
+import { shortTeamLinkUrl, teamLinkUrl } from './share';
 import { uid } from './storage';
 import type {
   BuiltinRebusConfig,
@@ -75,6 +76,32 @@ export function buildPostOrder(enabledPosts: number[], teamIndex: number, rotate
   const startIdx = rotate ? (teamIndex * Math.max(1, Math.floor(regular.length / 3))) % regular.length : 0;
   const ordered = [...regular.slice(startIdx), ...regular.slice(0, startIdx)];
   return [...ordered, finale];
+}
+
+// Beste delbare URL for et lag: kortlenke når rebusen er innebygd og
+// kartet er urørt, ellers den fulle lenken med alt innhold.
+export function bestTeamUrl(state: LeaderState, team: Team, teamIndex: number): string {
+  const cfg = leaderConfig(state);
+  const geoOverrides = state.geoOverrides ?? {};
+  const geoComplete =
+    (state.settings.useGeoMap ?? false) &&
+    state.settings.enabledPosts.every((n) => geoOverrides[n]);
+  const canShort =
+    !leaderCustomRebus(state) && !geoComplete && Object.keys(state.mapOverrides).length === 0;
+  if (!canShort) return teamLinkUrl(buildTeamLink(state, team, teamIndex));
+
+  const order = buildPostOrder(state.settings.enabledPosts, teamIndex, state.settings.rotateStarts);
+  const all = cfg.posts.map((p) => p.number).sort((a, b) => a - b);
+  const enabled = [...state.settings.enabledPosts].sort((a, b) => a - b);
+  const samePosts = enabled.length === all.length && enabled.every((n, idx) => n === all[idx]);
+  return shortTeamLinkUrl({
+    r: cfg.id,
+    n: team.name,
+    i: team.icon,
+    o: order[0],
+    f: isValidCode(state.settings.finalCode) ? state.settings.finalCode : cfg.defaultFinalCode,
+    p: samePosts ? undefined : enabled,
+  });
 }
 
 export function buildTeamLink(

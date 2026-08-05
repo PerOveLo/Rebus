@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { leaderConfig } from '../../services/personalize';
 import { leaderStore } from '../../services/storage';
-import { autoSplitTeams, buildPostOrder, buildTeamLink, randomTeamIcon, randomTeamName } from '../../services/teams';
-import { teamLinkUrl } from '../../services/share';
+import { autoSplitTeams, bestTeamUrl, buildPostOrder, randomTeamIcon, randomTeamName } from '../../services/teams';
 import { QRView } from '../../components/QRView';
 import { TeamPass } from '../../components/TeamPass';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
@@ -92,7 +91,7 @@ export function TeamsTab() {
   }
 
   async function copyLink(team: Team, index: number) {
-    const url = teamLinkUrl(buildTeamLink(state, team, index));
+    const url = bestTeamUrl(state, team, index);
     try {
       await navigator.clipboard.writeText(url);
       setCopiedTeamId(team.id);
@@ -225,9 +224,7 @@ export function TeamsTab() {
               {qrTeam.icon} {qrTeam.name}
             </h2>
             <QRView
-              text={teamLinkUrl(
-                buildTeamLink(state, qrTeam, state.teams.findIndex((t) => t.id === qrTeam.id)),
-              )}
+              text={bestTeamUrl(state, qrTeam, state.teams.findIndex((t) => t.id === qrTeam.id))}
               label="Laget skanner denne med kameraet sitt"
               shareable
               filename={`lag-${qrTeam.name.replace(/[^a-zA-Z0-9æøåÆØÅ]+/g, '-').toLowerCase()}.png`}
@@ -237,7 +234,8 @@ export function TeamsTab() {
               bildet og skanner det (eller bruk «Kopier lenke»).
             </p>
             <p className="small muted center">
-              Hele spillet ligger i lenken – ingen server, ingen innlogging. Ett lag = én telefon.
+              Ingen server, ingen innlogging – innholdet ligger i appen, lenken er bare lagets
+              billett. Ett lag = én telefon.
             </p>
             <button className="btn" onClick={() => setQrTeam(null)}>
               Lukk

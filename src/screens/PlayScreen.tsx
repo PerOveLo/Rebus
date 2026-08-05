@@ -4,7 +4,7 @@ import { activeConfig, activeCustomRebus, activePosts, findActivePost, getActive
 import { MapView, directionDeg, distanceLabel } from '../components/MapView';
 import { GeoMap } from '../components/GeoMap';
 import { teamStore } from '../services/storage';
-import { teamLinkUrl } from '../services/share';
+import { shortUrlFromSetup, teamLinkUrl } from '../services/share';
 import { QRView } from '../components/QRView';
 import { totalScore } from '../services/scoring';
 import {
@@ -275,7 +275,7 @@ export function PlayScreen() {
           <div className="modal stack" onClick={(e) => e.stopPropagation()}>
             <h2 className="center">Bli med på {progress.setup.team.name}</h2>
             <QRView
-              text={teamLinkUrl(progress.setup)}
+              text={shortUrlFromSetup(progress.setup) ?? teamLinkUrl(progress.setup)}
               label="Andre på laget skanner denne"
               shareable
               filename="lag-qr.png"
