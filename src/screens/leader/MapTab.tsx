@@ -137,6 +137,60 @@ export function MapTab() {
     }));
   }
 
+  // ✨ Automatisk plassering: når to poster er satt nøyaktig på GPS-kartet,
+  // regnes resten ut fra bildekart-posisjonene (skala + rotasjon).
+  function autoPlaceRest() {
+    const byNumber = new Map(posts.map((p) => [p.number, p.mapPos]));
+    // Velg de to plasserte postene som ligger lengst fra hverandre i bildet.
+    let a = manuallyPlaced[0];
+    let b = manuallyPlaced[1];
+    let best = -1;
+    for (let i = 0; i < manuallyPlaced.length; i++) {
+      for (let j = i + 1; j < manuallyPlaced.length; j++) {
+        const pi = byNumber.get(manuallyPlaced[i]);
+        const pj = byNumber.get(manuallyPlaced[j]);
+        if (!pi || !pj) continue;
+        const d = Math.hypot(pj.x - pi.x, pj.y - pi.y);
+        if (d > best) {
+          best = d;
+          a = manuallyPlaced[i];
+          b = manuallyPlaced[j];
+        }
+      }
+    }
+    const A = byNumber.get(a);
+    const B = byNumber.get(b);
+    const GA = geoOverrides[a];
+    const GB = geoOverrides[b];
+    if (!A || !B || !GA || !GB || best < 3) return;
+
+    const mPerLat = 110540;
+    const mPerLng = 111320 * Math.cos((GA.lat * Math.PI) / 180);
+    // Vektorer i meter (nord-opp): bildets y peker sørover.
+    const vGeo = { x: (GB.lng - GA.lng) * mPerLng, y: (GB.lat - GA.lat) * mPerLat };
+    const vImg = { x: B.x - A.x, y: -(B.y - A.y) };
+    const den = vImg.x * vImg.x + vImg.y * vImg.y;
+    if (den < 1e-9) return;
+    // Kompleks divisjon gir skala + rotasjon i én operasjon.
+    const sRe = (vGeo.x * vImg.x + vGeo.y * vImg.y) / den;
+    const sIm = (vGeo.y * vImg.x - vGeo.x * vImg.y) / den;
+
+    const updates: Record<number, GeoPos> = {};
+    for (const n of enabled) {
+      if (n === a || n === b) continue;
+      const P = byNumber.get(n);
+      if (!P) continue;
+      const w = { x: P.x - A.x, y: -(P.y - A.y) };
+      const m = { x: sRe * w.x - sIm * w.y, y: sIm * w.x + sRe * w.y };
+      updates[n] = { lat: GA.lat + m.y / mPerLat, lng: GA.lng + m.x / mPerLng };
+    }
+    leaderStore.update((s) => ({
+      ...s,
+      geoCenter: { lat: (GA.lat + GB.lat) / 2, lng: (GA.lng + GB.lng) / 2 },
+      geoOverrides: { ...(s.geoOverrides ?? {}), ...updates },
+    }));
+  }
+
   function resetGeo() {
     leaderStore.update((s) => ({ ...s, geoOverrides: {}, geoCenter: undefined }));
   }
@@ -147,6 +201,8 @@ export function MapTab() {
 
   const enabled = leaderEnabledPosts(state);
   const placedCount = enabled.filter((n) => geoOverrides[n]).length;
+  const manuallyPlaced = enabled.filter((n) => geoOverrides[n]);
+  const canAutoPlace = manuallyPlaced.length >= 2;
   const geoPosts = enabled
     .filter((n) => geoOverrides[n])
     .map((n) => ({
@@ -267,6 +323,16 @@ export function MapTab() {
                 onClick={() => setEditing((e) => !e)}
               >
                 {editing ? '✅ Ferdig' : '✏️ Dra poster'}
+              </button>
+            </div>
+            <div className="card card-soft stack" style={{ gap: 6 }}>
+              <strong className="small">✨ Slipp å dra alle postene:</strong>
+              <p className="small muted" style={{ margin: 0 }}>
+                Dra bare TO poster nøyaktig på plass (gjerne den første og den lengst unna) – så
+                regner appen ut resten fra posisjonene på bildekartet.
+              </p>
+              <button className="btn btn-small btn-grass" onClick={autoPlaceRest} disabled={!canAutoPlace}>
+                ✨ Plasser resten automatisk ({manuallyPlaced.length}/2 poster satt)
               </button>
             </div>
             <div className="spread">
