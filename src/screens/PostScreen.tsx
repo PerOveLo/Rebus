@@ -5,6 +5,7 @@ import { games } from '../games';
 import type { GameResult } from '../games/types';
 import { teamStore } from '../services/storage';
 import { Confetti } from '../components/Confetti';
+import { Fullscreen } from '../components/Fullscreen';
 import type { TeamProgress } from '../types';
 
 // Stegene på en post:
@@ -21,6 +22,7 @@ export function PostScreen() {
   const progress = teamStore.useStore();
   const postNumber = Number(num);
   const [hintOpen, setHintOpen] = useState(false);
+  const [imageFull, setImageFull] = useState(false);
 
   const partial =
     progress?.partial && progress.partial.postNumber === postNumber ? progress.partial : null;
@@ -192,11 +194,28 @@ export function PostScreen() {
       </div>
 
       {stage === STAGE_GAME && activePostImage(post) && (
-        <img
-          src={activePostImage(post)!}
-          alt={`Bilde til posten ${post.title}`}
-          className="post-image"
-        />
+        <button
+          type="button"
+          onClick={() => setImageFull(true)}
+          style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'zoom-in' }}
+          aria-label="Vis bildet i fullskjerm"
+        >
+          <img
+            src={activePostImage(post)!}
+            alt={`Bilde til posten ${post.title}`}
+            className="post-image"
+          />
+        </button>
+      )}
+
+      {imageFull && activePostImage(post) && (
+        <Fullscreen onClose={() => setImageFull(false)}>
+          <img
+            src={activePostImage(post)!}
+            alt={`Bilde til posten ${post.title}`}
+            style={{ width: '100%', height: 'auto', borderRadius: 12 }}
+          />
+        </Fullscreen>
       )}
 
       {alreadyDone && stage !== STAGE_DONE ? (

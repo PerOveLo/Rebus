@@ -16,6 +16,14 @@ export interface MapViewProps {
   onSelect?: (postNumber: number) => void;
   symbols?: Record<number, string>; // overstyr postsymboler (egen rebus)
   mapImage?: string; // overstyr kartbildet (spillleder-siden)
+  // Zoom automatisk inn på forrige + neste post (lagets spillvisning).
+  zoomRoute?: boolean;
+  // Trykk på kartet åpner fullskjerm (håndteres av forelderen).
+  onExpand?: () => void;
+}
+
+function clampNum(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
 }
 
 export function distanceLabel(from: MapPos, to: MapPos): string {
@@ -41,6 +49,8 @@ export function MapView({
   onSelect,
   symbols,
   mapImage,
+  zoomRoute = false,
+  onExpand,
 }: MapViewProps) {
   const [imgOk, setImgOk] = useState(true);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -80,6 +90,28 @@ export function MapView({
   const from = previousPost != null ? positions[previousPost] : undefined;
   const to = currentPost != null ? positions[currentPost] : undefined;
 
+  // Dynamisk zoom: utsnittet dekker forrige og neste post, med luft rundt.
+  let zoom: { k: number; vx: number; vy: number } | null = null;
+  if (zoomRoute && to) {
+    const pts = from ? [from, to] : [to];
+    const minX = Math.min(...pts.map((p) => p.x));
+    const maxX = Math.max(...pts.map((p) => p.x));
+    const minY = Math.min(...pts.map((p) => p.y));
+    const maxY = Math.max(...pts.map((p) => p.y));
+    const pad = 14;
+    const halfW = Math.max((maxX - minX) / 2 + pad, 17);
+    const halfH = Math.max((maxY - minY) / 2 + pad, 17);
+    const k = Math.min(2.6, Math.max(1, Math.min(50 / halfW, 50 / halfH)));
+    if (k > 1.06) {
+      const cx = clampNum((minX + maxX) / 2, 50 / k, 100 - 50 / k);
+      const cy = clampNum((minY + maxY) / 2, 50 / k, 100 - 50 / k);
+      zoom = { k, vx: cx - 50 / k, vy: cy - 50 / k };
+    }
+  }
+  const tf = (p: MapPos): MapPos =>
+    zoom ? { x: (p.x - zoom.vx) * zoom.k, y: (p.y - zoom.vy) * zoom.k } : p;
+  const pinAnim = zoomRoute && !reduced ? ' map-anim' : '';
+
   return (
     <div
       className="map-frame"
@@ -87,15 +119,35 @@ export function MapView({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
+      onClick={editable ? undefined : onExpand}
+      style={onExpand && !editable ? { cursor: 'zoom-in' } : undefined}
     >
       {imgOk ? (
-        <img
-          src={mapSrc}
-          alt={`Kart for ${cfg.shortName}`}
-          className="map-img"
-          onError={() => setImgOk(false)}
-          draggable={false}
-        />
+        <>
+          <img
+            src={mapSrc}
+            alt={`Kart for ${cfg.shortName}`}
+            className="map-img"
+            style={zoom ? { visibility: 'hidden' } : undefined}
+            onError={() => setImgOk(false)}
+            draggable={false}
+          />
+          {zoom && (
+            <img
+              src={mapSrc}
+              alt=""
+              aria-hidden="true"
+              className={`map-img map-img-zoom${pinAnim}`}
+              style={{
+                width: `${zoom.k * 100}%`,
+                height: `${zoom.k * 100}%`,
+                left: `${-zoom.vx * zoom.k}%`,
+                top: `${-zoom.vy * zoom.k}%`,
+              }}
+              draggable={false}
+            />
+          )}
+        </>
       ) : (
         <div className="map-placeholder">
           <span style={{ fontSize: '2.4rem' }}>🗺️</span>
@@ -126,16 +178,19 @@ export function MapView({
 
       {/* Romnavn – bare på rebusens eget kartbilde, ikke egne opplastinger */}
       {!mapSrc.startsWith('data:') &&
-        cfg.map.labels?.map((l) => (
-          <span
-            key={l.text}
-            className="map-label"
-            style={{ left: `${l.pos.x}%`, top: `${l.pos.y}%` }}
-            aria-hidden="true"
-          >
-            {l.text}
-          </span>
-        ))}
+        cfg.map.labels?.map((l) => {
+          const lp = tf(l.pos);
+          return (
+            <span
+              key={l.text}
+              className={`map-label${pinAnim}`}
+              style={{ left: `${lp.x}%`, top: `${lp.y}%` }}
+              aria-hidden="true"
+            >
+              {l.text}
+            </span>
+          );
+        })}
 
       {/* Stiplet rute fra forrige til neste post */}
       {from && to && (
@@ -146,10 +201,10 @@ export function MapView({
           preserveAspectRatio="none"
         >
           <line
-            x1={from.x}
-            y1={from.y}
-            x2={to.x}
-            y2={to.y}
+            x1={tf(from).x}
+            y1={tf(from).y}
+            x2={tf(to).x}
+            y2={tf(to).y}
             stroke="#f4553f"
             strokeWidth="1.1"
             strokeDasharray="3 2.4"
@@ -165,13 +220,17 @@ export function MapView({
         const done = completedPosts.includes(num);
         const isNext = currentPost === num;
         const cls = done ? 'map-pin-done' : isNext ? 'map-pin-next' : 'map-pin-inactive';
+        const pp = tf(pos);
         return (
           <button
             key={num}
             type="button"
-            className={`map-pin ${cls}`}
-            style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-            onClick={() => onSelect?.(num)}
+            className={`map-pin ${cls}${pinAnim}`}
+            style={{ left: `${pp.x}%`, top: `${pp.y}%` }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect?.(num);
+            }}
             onPointerDown={() => handlePointerDown(num)}
             aria-label={`Post ${num}${done ? ' (fullført)' : isNext ? ' (neste)' : ''}`}
           >
@@ -187,17 +246,37 @@ export function MapView({
       {positions[cfg.finaleNumber] && (
         <span
           aria-hidden="true"
+          className={pinAnim ? 'map-anim' : undefined}
           style={{
             position: 'absolute',
-            left: `${positions[cfg.finaleNumber].x}%`,
-            top: `${positions[cfg.finaleNumber].y - 6}%`,
+            left: `${tf(positions[cfg.finaleNumber]).x}%`,
+            top: `${tf({ x: positions[cfg.finaleNumber].x, y: positions[cfg.finaleNumber].y - 6 }).y}%`,
             transform: 'translate(-50%, -50%)',
-            fontSize: '1.5rem',
             pointerEvents: 'none',
+            fontSize: '1.5rem',
             textShadow: '0 1px 4px rgba(255,255,255,0.9)',
           }}
         >
           {cfg.map.homeEmoji}
+        </span>
+      )}
+
+      {/* Fullskjerm-hint */}
+      {onExpand && !editable && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            bottom: 8,
+            right: 44,
+            fontSize: '1.1rem',
+            background: 'rgba(255,255,255,0.85)',
+            borderRadius: 999,
+            padding: '3px 8px',
+            pointerEvents: 'none',
+          }}
+        >
+          🔎
         </span>
       )}
     </div>

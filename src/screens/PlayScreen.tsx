@@ -4,6 +4,7 @@ import { builtinRebuses } from '../config/rebuses';
 import { activeConfig, activeCustomRebus, activePosts, findActivePost, getActivePost } from '../services/personalize';
 import { MapView, directionDeg, distanceLabel } from '../components/MapView';
 import { GeoMap } from '../components/GeoMap';
+import { Fullscreen } from '../components/Fullscreen';
 import { teamStore } from '../services/storage';
 import { shortUrlFromSetup, teamLinkUrl } from '../services/share';
 import { QRView } from '../components/QRView';
@@ -27,6 +28,7 @@ export function PlayScreen() {
   const reduced = useReducedMotion();
   const [symbolsOpen, setSymbolsOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
+  const [mapFull, setMapFull] = useState(false);
   const [userPos, setUserPos] = useState<GeoPos | null>(null);
   const [gpsOn, setGpsOn] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -227,6 +229,8 @@ export function PlayScreen() {
             currentPost={currentNum}
             previousPost={prevNum}
             symbols={postSymbols}
+            zoomRoute
+            onExpand={() => setMapFull(true)}
             onSelect={(n) => {
               if (n === currentNum) navigate(`/post/${n}`);
             }}
@@ -237,6 +241,25 @@ export function PlayScreen() {
             </button>
           )}
         </>
+      )}
+
+      {mapFull && (
+        <Fullscreen onClose={() => setMapFull(false)}>
+          <MapView
+            positions={positions}
+            visiblePosts={order}
+            completedPosts={completed}
+            currentPost={currentNum}
+            previousPost={prevNum}
+            symbols={postSymbols}
+            onSelect={(n) => {
+              if (n === currentNum) {
+                setMapFull(false);
+                navigate(`/post/${n}`);
+              }
+            }}
+          />
+        </Fullscreen>
       )}
 
       <div className="card stack">
