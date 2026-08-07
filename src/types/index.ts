@@ -16,7 +16,7 @@ export type Category =
 // egenrebuser, som reiser med i laglenken).
 export type BuiltinRebusId = 'standard' | 'lydia' | 'ute';
 
-// Spillleders egne tekster på en post (tomt felt = rebusens originaltekst).
+// Spillleders egne tekster på en post (uendret felt = rebusens originaltekst).
 export interface PostTextOverride {
   title?: string;
   clue?: string;

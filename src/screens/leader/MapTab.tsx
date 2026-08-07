@@ -236,6 +236,11 @@ export function MapTab() {
             ? 'Ekte kart med GPS: søk opp adressen, spre postene og dra dem dit de skal. Lagene kan se sin egen posisjon (valgfritt, kun lokalt på telefonen).'
             : 'Eget kartbilde med prosentkoordinater – fungerer helt uten nett og GPS.'}
         </p>
+        <p className="small" style={{ margin: 0, fontWeight: 700 }}>
+          ⚠️ Valget gjelder bare NYE laglenker. Lag som allerede har fått lenke/QR beholder
+          kartet sitt – del ut nye lenker etter at du har byttet. (Et lag med GPS-kart kan
+          også selv trykke «🛋️ Vanlig modus» for å få bildekartet.)
+        </p>
       </div>
 
       {!useGeo ? (

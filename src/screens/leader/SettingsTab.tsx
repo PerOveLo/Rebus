@@ -27,13 +27,23 @@ export function SettingsTab() {
     leaderStore.update((s) => ({ ...s, settings: { ...s.settings, [key]: value } }));
   }
 
-  // Omskrivning av posttekster (per aktiv rebus, tomt felt = original).
+  // Omskrivning av posttekster (per aktiv rebus). Feltene står ferdig
+  // utfylt med originalteksten – bare det som faktisk avviker lagres.
   function setPostText(num: number, field: keyof PostTextOverride, value: string) {
+    const base = cfg.posts.find((p) => p.number === num);
+    const original =
+      field === 'title'
+        ? base?.title ?? ''
+        : field === 'clue'
+          ? base?.clue ?? ''
+          : ((base?.data as { prompt?: string } | undefined)?.prompt ?? '');
     leaderStore.update((s) => {
       const rebusId = cfg.id;
       const forRebus = { ...(s.postTexts?.[rebusId] ?? {}) };
-      const entry: PostTextOverride = { ...(forRebus[num] ?? {}), [field]: value };
-      if (!entry.title?.trim() && !entry.clue?.trim() && !entry.prompt?.trim()) {
+      const entry: PostTextOverride = { ...(forRebus[num] ?? {}) };
+      if (value === original || value.trim() === '') delete entry[field];
+      else entry[field] = value;
+      if (entry.title == null && entry.clue == null && entry.prompt == null) {
         delete forRebus[num];
       } else {
         forRebus[num] = entry;
@@ -237,18 +247,18 @@ export function SettingsTab() {
         <div className="card stack">
           <h2>✏️ Posttekster</h2>
           <p className="small muted">
-            Skriv om tittel, veibeskrivelse og oppgavetekst så de passer virkeligheten
-            («gå ned stien med søpla …»). Tomt felt = originalteksten. Endringene gjelder på
+            Originalteksten står ferdig utfylt – endre bare det som skal bli annerledes
+            («gå ned stien med søpla …»). «↩️» setter tilbake originalen. Endringene gjelder på
             denne telefonen med én gang – del ut nye laglenker for å få dem med til lagene.
           </p>
           {cfg.posts.map((p) => {
             const o = state.postTexts?.[cfg.id]?.[p.number] ?? {};
-            const edited = Boolean(o.title?.trim() || o.clue?.trim() || o.prompt?.trim());
-            const basePrompt = (p.data as { prompt?: string } | undefined)?.prompt;
+            const edited = o.title != null || o.clue != null || o.prompt != null;
+            const basePrompt = (p.data as { prompt?: string } | undefined)?.prompt ?? '';
             return (
               <details key={p.number} className="card card-soft" style={{ padding: 10 }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 700 }}>
-                  {p.number}. {p.symbol} {o.title?.trim() || p.title}
+                  {p.number}. {p.symbol} {o.title ?? p.title}
                   {edited && ' ✏️'}
                 </summary>
                 <div className="stack" style={{ marginTop: 8, gap: 6 }}>
@@ -256,8 +266,7 @@ export function SettingsTab() {
                   <input
                     id={`pt-title-${p.number}`}
                     type="text"
-                    value={o.title ?? ''}
-                    placeholder={p.title}
+                    value={o.title ?? p.title}
                     onChange={(e) => setPostText(p.number, 'title', e.target.value)}
                   />
                   <label className="small" htmlFor={`pt-clue-${p.number}`}>
@@ -266,8 +275,7 @@ export function SettingsTab() {
                   <textarea
                     id={`pt-clue-${p.number}`}
                     rows={2}
-                    value={o.clue ?? ''}
-                    placeholder={p.clue}
+                    value={o.clue ?? p.clue}
                     onChange={(e) => setPostText(p.number, 'clue', e.target.value)}
                   />
                   {p.gameType === 'checkpoint' && (
@@ -277,9 +285,8 @@ export function SettingsTab() {
                       </label>
                       <textarea
                         id={`pt-prompt-${p.number}`}
-                        rows={5}
-                        value={o.prompt ?? ''}
-                        placeholder={basePrompt}
+                        rows={6}
+                        value={o.prompt ?? basePrompt}
                         onChange={(e) => setPostText(p.number, 'prompt', e.target.value)}
                       />
                     </>
