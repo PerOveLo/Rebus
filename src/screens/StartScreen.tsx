@@ -47,6 +47,8 @@ export function StartScreen() {
     const roadGames = Object.fromEntries(
       (cfg.roadSlots ?? []).filter((s) => s.default > 0).map((s) => [s.before, s.default]),
     );
+    // Spillleders omskrevne posttekster på denne telefonen følger med.
+    const postTexts = leaderStore.get().postTexts?.[rebusId];
     const payload: TeamLinkPayload = {
       v: 1,
       kind: 'team',
@@ -56,6 +58,7 @@ export function StartScreen() {
       finalCode: cfg.defaultFinalCode,
       builtin: rebusId !== 'standard' ? rebusId : undefined,
       roadGames: Object.keys(roadGames).length > 0 ? roadGames : undefined,
+      postTexts: postTexts && Object.keys(postTexts).length > 0 ? postTexts : undefined,
     };
     teamStore.set({
       setup: payload,

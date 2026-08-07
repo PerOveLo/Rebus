@@ -16,6 +16,13 @@ export type Category =
 // egenrebuser, som reiser med i laglenken).
 export type BuiltinRebusId = 'standard' | 'lydia' | 'ute';
 
+// Spillleders egne tekster på en post (tomt felt = rebusens originaltekst).
+export interface PostTextOverride {
+  title?: string;
+  clue?: string;
+  prompt?: string; // oppgaveteksten på «checkpoint»-poster
+}
+
 export type GameType =
   | 'tunnel-run'
   | 'passport'
@@ -146,6 +153,8 @@ export interface TeamLinkPayload {
   builtin?: BuiltinRebusId;
   // Underveis-spill: målpost -> postnummer i innendørsrebusen.
   roadGames?: Record<number, number>;
+  // Spillleders omskrevne posttekster.
+  postTexts?: Record<number, PostTextOverride>;
 }
 
 export interface PostResult {
@@ -276,4 +285,6 @@ export interface LeaderState {
   geoCenter?: GeoPos;
   customRebus?: CustomRebusPayload;
   rebusAnswers?: RebusAnswers;
+  // Omskrevne posttekster per innebygd rebus (rebus-id -> postnummer -> tekster).
+  postTexts?: Record<string, Record<number, PostTextOverride>>;
 }

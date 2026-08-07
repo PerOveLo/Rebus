@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isValidCode } from '../../config/gameConfig';
 import { builtinRebus, builtinRebuses } from '../../config/rebuses';
-import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderFinaleNumber, leaderPosts, leaderRoadGames } from '../../services/personalize';
+import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderFinaleNumber, leaderPosts, leaderPostTexts, leaderRoadGames } from '../../services/personalize';
 import { defaultLeaderState, leaderStore, teamStore, uid } from '../../services/storage';
-import type { LeaderState, TeamLinkPayload } from '../../types';
+import type { LeaderState, PostTextOverride, TeamLinkPayload } from '../../types';
 
 export function SettingsTab() {
   const state = leaderStore.useStore();
@@ -25,6 +25,29 @@ export function SettingsTab() {
 
   function setSetting<K extends keyof LeaderState['settings']>(key: K, value: LeaderState['settings'][K]) {
     leaderStore.update((s) => ({ ...s, settings: { ...s.settings, [key]: value } }));
+  }
+
+  // Omskrivning av posttekster (per aktiv rebus, tomt felt = original).
+  function setPostText(num: number, field: keyof PostTextOverride, value: string) {
+    leaderStore.update((s) => {
+      const rebusId = cfg.id;
+      const forRebus = { ...(s.postTexts?.[rebusId] ?? {}) };
+      const entry: PostTextOverride = { ...(forRebus[num] ?? {}), [field]: value };
+      if (!entry.title?.trim() && !entry.clue?.trim() && !entry.prompt?.trim()) {
+        delete forRebus[num];
+      } else {
+        forRebus[num] = entry;
+      }
+      return { ...s, postTexts: { ...(s.postTexts ?? {}), [rebusId]: forRebus } };
+    });
+  }
+
+  function resetPostText(num: number) {
+    leaderStore.update((s) => {
+      const forRebus = { ...(s.postTexts?.[cfg.id] ?? {}) };
+      delete forRebus[num];
+      return { ...s, postTexts: { ...(s.postTexts ?? {}), [cfg.id]: forRebus } };
+    });
   }
 
   function togglePost(num: number) {
@@ -68,6 +91,8 @@ export function SettingsTab() {
       mapOverrides: Object.keys(state.mapOverrides).length > 0 ? state.mapOverrides : undefined,
       roadGames:
         Object.keys(leaderRoadGames(state)).length > 0 ? leaderRoadGames(state) : undefined,
+      postTexts:
+        Object.keys(leaderPostTexts(state)).length > 0 ? leaderPostTexts(state) : undefined,
     };
     teamStore.set({
       setup: payload,
@@ -207,6 +232,69 @@ export function SettingsTab() {
           <span>Lagene starter på forskjellige poster (unngår kø)</span>
         </label>
       </div>
+
+      {!isCustom && (
+        <div className="card stack">
+          <h2>✏️ Posttekster</h2>
+          <p className="small muted">
+            Skriv om tittel, veibeskrivelse og oppgavetekst så de passer virkeligheten
+            («gå ned stien med søpla …»). Tomt felt = originalteksten. Endringene gjelder på
+            denne telefonen med én gang – del ut nye laglenker for å få dem med til lagene.
+          </p>
+          {cfg.posts.map((p) => {
+            const o = state.postTexts?.[cfg.id]?.[p.number] ?? {};
+            const edited = Boolean(o.title?.trim() || o.clue?.trim() || o.prompt?.trim());
+            const basePrompt = (p.data as { prompt?: string } | undefined)?.prompt;
+            return (
+              <details key={p.number} className="card card-soft" style={{ padding: 10 }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 700 }}>
+                  {p.number}. {p.symbol} {o.title?.trim() || p.title}
+                  {edited && ' ✏️'}
+                </summary>
+                <div className="stack" style={{ marginTop: 8, gap: 6 }}>
+                  <label className="small" htmlFor={`pt-title-${p.number}`}><strong>Tittel</strong></label>
+                  <input
+                    id={`pt-title-${p.number}`}
+                    type="text"
+                    value={o.title ?? ''}
+                    placeholder={p.title}
+                    onChange={(e) => setPostText(p.number, 'title', e.target.value)}
+                  />
+                  <label className="small" htmlFor={`pt-clue-${p.number}`}>
+                    <strong>Veibeskrivelse</strong> (vises på kartet)
+                  </label>
+                  <textarea
+                    id={`pt-clue-${p.number}`}
+                    rows={2}
+                    value={o.clue ?? ''}
+                    placeholder={p.clue}
+                    onChange={(e) => setPostText(p.number, 'clue', e.target.value)}
+                  />
+                  {p.gameType === 'checkpoint' && (
+                    <>
+                      <label className="small" htmlFor={`pt-prompt-${p.number}`}>
+                        <strong>Oppgavetekst</strong> (den voksne leser denne)
+                      </label>
+                      <textarea
+                        id={`pt-prompt-${p.number}`}
+                        rows={5}
+                        value={o.prompt ?? ''}
+                        placeholder={basePrompt}
+                        onChange={(e) => setPostText(p.number, 'prompt', e.target.value)}
+                      />
+                    </>
+                  )}
+                  {edited && (
+                    <button className="btn btn-small btn-ghost" onClick={() => resetPostText(p.number)}>
+                      ↩️ Tilbake til originalteksten
+                    </button>
+                  )}
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      )}
 
       {!isCustom && (cfg.roadSlots?.length ?? 0) > 0 && (
         <div className="card stack">

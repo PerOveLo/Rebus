@@ -6,7 +6,27 @@ import type {
   CustomRebusPayload,
   LeaderState,
   PostConfig,
+  PostTextOverride,
 } from '../types';
+
+// Legg spillleders omskrevne tekster oppå rebusens originaler.
+// Tomme felt betyr «bruk originalen».
+function withTextOverrides(
+  posts: PostConfig[],
+  overrides: Record<number, PostTextOverride> | undefined,
+): PostConfig[] {
+  if (!overrides || Object.keys(overrides).length === 0) return posts;
+  return posts.map((p) => {
+    const o = overrides[p.number];
+    if (!o) return p;
+    return {
+      ...p,
+      title: o.title?.trim() ? o.title.trim() : p.title,
+      clue: o.clue?.trim() ? o.clue.trim() : p.clue,
+      data: o.prompt?.trim() ? { ...(p.data ?? {}), prompt: o.prompt.trim() } : p.data,
+    };
+  });
+}
 
 // Innholdsoppslag for «aktiv rebus». Rekkefølgen er:
 // 1) Har telefonen et aktivt lag, bestemmer laglenken alt (custom eller builtin).
@@ -41,7 +61,13 @@ export function activeConfig(): BuiltinRebusConfig {
 }
 
 export function activePosts(): PostConfig[] {
-  return activeCustomRebus()?.posts ?? activeConfig().posts;
+  const custom = activeCustomRebus();
+  if (custom) return custom.posts;
+  const team = teamStore.get();
+  const overrides = team
+    ? team.setup.postTexts
+    : leaderStore.get().postTexts?.[activeBuiltinId()];
+  return withTextOverrides(activeConfig().posts, overrides);
 }
 
 export function getActivePost(num: number): PostConfig {
@@ -92,7 +118,27 @@ export function leaderCustomRebus(state: LeaderState): CustomRebusPayload | unde
 }
 
 export function leaderPosts(state: LeaderState): PostConfig[] {
-  return leaderCustomRebus(state)?.posts ?? leaderConfig(state).posts;
+  const custom = leaderCustomRebus(state);
+  if (custom) return custom.posts;
+  return withTextOverrides(
+    leaderConfig(state).posts,
+    state.postTexts?.[leaderBuiltinId(state)],
+  );
+}
+
+// Renskede tekst-overstyringer til laglenker: bare felt med innhold.
+export function leaderPostTexts(state: LeaderState): Record<number, PostTextOverride> {
+  if (leaderCustomRebus(state)) return {};
+  const raw = state.postTexts?.[leaderBuiltinId(state)] ?? {};
+  const clean: Record<number, PostTextOverride> = {};
+  for (const [num, o] of Object.entries(raw)) {
+    const entry: PostTextOverride = {};
+    if (o.title?.trim()) entry.title = o.title.trim();
+    if (o.clue?.trim()) entry.clue = o.clue.trim();
+    if (o.prompt?.trim()) entry.prompt = o.prompt.trim();
+    if (Object.keys(entry).length > 0) clean[Number(num)] = entry;
+  }
+  return clean;
 }
 
 // Aktive poster filtrert mot rebusen som faktisk er valgt – beskytter mot

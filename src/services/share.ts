@@ -1,7 +1,7 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 import { builtinRebus, isBuiltinRebusId } from '../config/rebuses';
 import { uid } from './storage';
-import type { BuiltinRebusId, TeamLinkPayload, TeamResultPayload } from '../types';
+import type { BuiltinRebusId, PostTextOverride, TeamLinkPayload, TeamResultPayload } from '../types';
 
 // Laglenker og resultater deles som komprimerte strenger i URL/QR.
 // Ingen server er involvert – all informasjon ligger i selve lenken.
@@ -18,7 +18,8 @@ export function encodePayload(payload: TeamLinkPayload | TeamResultPayload): str
 
 // Kortlenke-data: r = rebus, n = lagnavn, i = ikon, o = startpost,
 // f = finalekode, p = aktive poster (bare hvis ikke alle er med),
-// g = underveis-spill (målpost -> post i innendørsrebusen).
+// g = underveis-spill (målpost -> post i innendørsrebusen),
+// t = omskrevne posttekster (postnr -> {n: tittel, c: veibeskrivelse, p: oppgave}).
 export interface ShortTeamLink {
   v: 2;
   r: BuiltinRebusId;
@@ -28,6 +29,28 @@ export interface ShortTeamLink {
   f: string;
   p?: number[];
   g?: Record<number, number>;
+  t?: Record<number, { n?: string; c?: string; p?: string }>;
+}
+
+function compactTexts(
+  postTexts: Record<number, PostTextOverride> | undefined,
+): ShortTeamLink['t'] {
+  if (!postTexts || Object.keys(postTexts).length === 0) return undefined;
+  const out: NonNullable<ShortTeamLink['t']> = {};
+  for (const [num, o] of Object.entries(postTexts)) {
+    out[Number(num)] = { n: o.title, c: o.clue, p: o.prompt };
+  }
+  return out;
+}
+
+function expandTexts(t: ShortTeamLink['t']): Record<number, PostTextOverride> | undefined {
+  if (!t || typeof t !== 'object') return undefined;
+  const out: Record<number, PostTextOverride> = {};
+  for (const [num, o] of Object.entries(t)) {
+    if (!o || typeof o !== 'object') continue;
+    out[Number(num)] = { title: o.n, clue: o.c, prompt: o.p };
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 export function shortTeamLinkUrl(data: Omit<ShortTeamLink, 'v'>): string {
@@ -39,6 +62,7 @@ export function shortTeamLinkUrl(data: Omit<ShortTeamLink, 'v'>): string {
 // Forutsetter at oppsettet ikke bærer egen rebus, GPS eller kartendringer.
 export function shortUrlFromSetup(setup: TeamLinkPayload): string | null {
   if (setup.custom || setup.geo || setup.mapOverrides) return null;
+  // (postTexts og roadGames blir med i kortlenken under.)
   const cfg = builtinRebus(setup.builtin);
   const all = cfg.posts.map((p) => p.number).sort((a, b) => a - b);
   const enabled = [...setup.order].sort((a, b) => a - b);
@@ -51,6 +75,7 @@ export function shortUrlFromSetup(setup: TeamLinkPayload): string | null {
     f: setup.finalCode,
     p: samePosts ? undefined : enabled,
     g: setup.roadGames && Object.keys(setup.roadGames).length > 0 ? setup.roadGames : undefined,
+    t: compactTexts(setup.postTexts),
   });
 }
 
@@ -85,6 +110,7 @@ function expandShortTeamLink(parsed: ShortTeamLink): TeamLinkPayload | null {
       parsed.g && typeof parsed.g === 'object' && Object.keys(parsed.g).length > 0
         ? parsed.g
         : undefined,
+    postTexts: expandTexts(parsed.t),
   };
 }
 
