@@ -23,9 +23,15 @@ export function activeCustomRebus(): CustomRebusPayload | undefined {
 
 export function activeBuiltinId(): BuiltinRebusId {
   const team = teamStore.get();
-  if (team) return isBuiltinRebusId(team.setup.builtin) ? team.setup.builtin : 'standard';
+  if (team) {
+    if (isBuiltinRebusId(team.setup.builtin)) return team.setup.builtin;
+    // Egne genererte rebuser bruker uterebusen som basis; gamle lenker
+    // uten builtin-felt er Skylleviga-lenker.
+    return team.setup.custom ? 'ute' : 'standard';
+  }
   const id = leaderStore.get().settings.activeRebus;
-  return isBuiltinRebusId(id) ? id : 'standard';
+  if (id === 'custom') return 'ute';
+  return isBuiltinRebusId(id) ? id : 'ute';
 }
 
 // Den innebygde rebusen som gjelder nå (for en egen generert rebus er
@@ -71,7 +77,7 @@ export function activeFinaleSymbolPosts(): number[] {
 
 export function leaderBuiltinId(state: LeaderState): BuiltinRebusId {
   const id = state.settings.activeRebus;
-  if (id === 'custom') return 'standard'; // basisinnhold for egne rebuser
+  if (id === 'custom') return 'ute'; // basisinnhold for egne rebuser
   return isBuiltinRebusId(id) ? id : 'ute'; // uterebusen er standard
 }
 
@@ -100,4 +106,37 @@ export function leaderEnabledPosts(state: LeaderState): number[] {
 // Finaleposten (alltid sist i løypa) for spillleders aktive rebus.
 export function leaderFinaleNumber(state: LeaderState): number {
   return leaderCustomRebus(state) ? 15 : leaderConfig(state).finaleNumber;
+}
+
+// Underveis-spill for spillleders aktive rebus: målpost -> postnummer i
+// innendørsrebusen. Uten eget valg brukes rebusens standard; 0 = ingen.
+export function leaderRoadGames(state: LeaderState): Record<number, number> {
+  if (leaderCustomRebus(state)) return {};
+  const slots = leaderConfig(state).roadSlots ?? [];
+  const chosen = state.settings.roadGames ?? {};
+  const result: Record<number, number> = {};
+  for (const slot of slots) {
+    const pick = chosen[slot.before] ?? slot.default;
+    if (pick > 0 && builtinRebuses.lydia.posts.some((p) => p.number === pick && p.number !== 15)) {
+      result[slot.before] = pick;
+    }
+  }
+  return result;
+}
+
+// Bilde for en post: spillleders eget opplastede bilde (kun denne
+// telefonen) vinner over bildet som følger med rebusen.
+export function postImageKey(rebusId: string, postNumber: number): string {
+  return `skylleviga:post-image:${rebusId}:${postNumber}`;
+}
+
+export function activePostImage(post: PostConfig): string | null {
+  const rebusId = activeCustomRebus() ? 'custom' : activeBuiltinId();
+  try {
+    const own = localStorage.getItem(postImageKey(rebusId, post.number));
+    if (own) return own;
+  } catch {
+    // localStorage utilgjengelig
+  }
+  return post.image ? `${import.meta.env.BASE_URL}${post.image}` : null;
 }

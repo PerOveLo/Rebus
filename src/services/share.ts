@@ -17,7 +17,8 @@ export function encodePayload(payload: TeamLinkPayload | TeamResultPayload): str
 }
 
 // Kortlenke-data: r = rebus, n = lagnavn, i = ikon, o = startpost,
-// f = finalekode, p = aktive poster (bare hvis ikke alle er med).
+// f = finalekode, p = aktive poster (bare hvis ikke alle er med),
+// g = underveis-spill (målpost -> post i innendørsrebusen).
 export interface ShortTeamLink {
   v: 2;
   r: BuiltinRebusId;
@@ -26,6 +27,7 @@ export interface ShortTeamLink {
   o: number;
   f: string;
   p?: number[];
+  g?: Record<number, number>;
 }
 
 export function shortTeamLinkUrl(data: Omit<ShortTeamLink, 'v'>): string {
@@ -48,6 +50,7 @@ export function shortUrlFromSetup(setup: TeamLinkPayload): string | null {
     o: setup.order[0],
     f: setup.finalCode,
     p: samePosts ? undefined : enabled,
+    g: setup.roadGames && Object.keys(setup.roadGames).length > 0 ? setup.roadGames : undefined,
   });
 }
 
@@ -78,6 +81,10 @@ function expandShortTeamLink(parsed: ShortTeamLink): TeamLinkPayload | null {
     order,
     finalCode: typeof parsed.f === 'string' && /^\d{4}$/.test(parsed.f) ? parsed.f : cfg.defaultFinalCode,
     builtin: parsed.r !== 'standard' ? parsed.r : undefined,
+    roadGames:
+      parsed.g && typeof parsed.g === 'object' && Object.keys(parsed.g).length > 0
+        ? parsed.g
+        : undefined,
   };
 }
 

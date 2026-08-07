@@ -106,6 +106,9 @@ export interface PostConfig {
   categories: Category[];
   mapPos: MapPos;
   points: PostPoints;
+  // Bilde som vises på posten (filnavn i public/). Spillleder kan
+  // overstyre med eget opplastet bilde på sin telefon.
+  image?: string;
   // Spillspesifikke data (spørsmål, gjenstander osv.) – bevisst løst typet
   // slik at alt innhold kan redigeres i gameConfig.ts.
   data?: Record<string, unknown>;
@@ -141,6 +144,8 @@ export interface TeamLinkPayload {
   // Innebygd rebus (utenom standard): bare id-en trengs i lenken,
   // innholdet ligger i appen.
   builtin?: BuiltinRebusId;
+  // Underveis-spill: målpost -> postnummer i innendørsrebusen.
+  roadGames?: Record<number, number>;
 }
 
 export interface PostResult {
@@ -179,6 +184,8 @@ export interface TeamProgress {
   // Laget kan bytte fra GPS-kart til vanlig bildekart (f.eks. for å
   // teste spillet innendørs uten å gå ruta).
   preferClassicMap?: boolean;
+  // Poeng fra underveis-spill, per målpost.
+  roadResults?: Record<number, number>;
 }
 
 // Det som pakkes inn i resultat-QR-koden.
@@ -204,6 +211,9 @@ export interface LeaderSettings {
   teamCount: number;
   useGeoMap?: boolean; // GPS-kart i stedet for bildekart
   activeRebus?: BuiltinRebusId | 'custom';
+  // Valg av underveis-spill per målpost (0 = ingen). Uten valg brukes
+  // rebusens standard.
+  roadGames?: Record<number, number>;
 }
 
 // Felles fasong for de innebygde rebusene (Skylleviga, Lydias bursdag …).
@@ -250,6 +260,9 @@ export interface BuiltinRebusConfig {
     presentationOutro: string;
     presentationJoke: string;
   };
+  // Underveis-spill: digitale minispill den voksne får varsel om på vei
+  // mot en post. Spillet velges blant postene i innendørsrebusen.
+  roadSlots?: { before: number; label: string; default: number }[];
   posts: PostConfig[];
 }
 

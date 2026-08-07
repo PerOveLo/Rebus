@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['skylleviga-kart.jpg', 'lydia-kart.jpg', 'fuglevikkleiva-kart.jpg', 'icon.svg'],
+      includeAssets: ['skylleviga-kart.jpg', 'lydia-kart.jpg', 'fuglevikkleiva-kart.jpg', 'post-ute-3.jpg', 'post-ute-5.jpg', 'post-ute-6.jpg', 'icon.svg'],
       manifest: {
         name: 'Familierebus',
         short_name: 'Rebus',

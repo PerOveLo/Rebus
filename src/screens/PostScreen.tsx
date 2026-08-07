@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { findActivePost } from '../services/personalize';
+import { activePostImage, findActivePost } from '../services/personalize';
 import { games } from '../games';
 import type { GameResult } from '../games/types';
 import { teamStore } from '../services/storage';
@@ -188,8 +188,16 @@ export function PostScreen() {
       <div className="card center">
         <span className="big-emoji" aria-hidden="true">{post.symbol}</span>
         <h1>{post.title}</h1>
-        {stage === STAGE_GAME && <p className="muted small">{post.gameIntro}</p>}
+        {stage === STAGE_GAME && post.gameIntro && <p className="muted small">{post.gameIntro}</p>}
       </div>
+
+      {stage === STAGE_GAME && activePostImage(post) && (
+        <img
+          src={activePostImage(post)!}
+          alt={`Bilde til posten ${post.title}`}
+          className="post-image"
+        />
+      )}
 
       {alreadyDone && stage !== STAGE_DONE ? (
         <div className="card center stack">

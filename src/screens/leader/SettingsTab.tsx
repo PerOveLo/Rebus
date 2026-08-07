@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isValidCode } from '../../config/gameConfig';
-import { builtinRebus } from '../../config/rebuses';
-import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderFinaleNumber, leaderPosts } from '../../services/personalize';
+import { builtinRebus, builtinRebuses } from '../../config/rebuses';
+import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderFinaleNumber, leaderPosts, leaderRoadGames } from '../../services/personalize';
 import { defaultLeaderState, leaderStore, teamStore, uid } from '../../services/storage';
 import type { LeaderState, TeamLinkPayload } from '../../types';
 
@@ -66,6 +66,8 @@ export function SettingsTab() {
       custom,
       builtin: !custom && cfg.id !== 'standard' ? cfg.id : undefined,
       mapOverrides: Object.keys(state.mapOverrides).length > 0 ? state.mapOverrides : undefined,
+      roadGames:
+        Object.keys(leaderRoadGames(state)).length > 0 ? leaderRoadGames(state) : undefined,
     };
     teamStore.set({
       setup: payload,
@@ -205,6 +207,51 @@ export function SettingsTab() {
           <span>Lagene starter på forskjellige poster (unngår kø)</span>
         </label>
       </div>
+
+      {!isCustom && (cfg.roadSlots?.length ?? 0) > 0 && (
+        <div className="card stack">
+          <h2>🎒 Underveis-spill</h2>
+          <p className="small muted">
+            Digitale minispill den voksne får varsel om på kartet, på vei mot en post. Velg blant
+            spillene fra innendørsrebusen – eller ingen. Valget bakes inn i nye laglenker.
+          </p>
+          {cfg.roadSlots!.map((slot) => {
+            const current = state.settings.roadGames?.[slot.before] ?? slot.default;
+            return (
+              <div key={slot.before} className="stack" style={{ gap: 4 }}>
+                <label className="small" htmlFor={`road-${slot.before}`}>
+                  <strong>{slot.label}</strong> (mot post {slot.before})
+                </label>
+                <select
+                  id={`road-${slot.before}`}
+                  value={current}
+                  onChange={(e) =>
+                    leaderStore.update((s) => ({
+                      ...s,
+                      settings: {
+                        ...s.settings,
+                        roadGames: {
+                          ...(s.settings.roadGames ?? {}),
+                          [slot.before]: Number(e.target.value),
+                        },
+                      },
+                    }))
+                  }
+                >
+                  <option value={0}>Ingen</option>
+                  {builtinRebuses.lydia.posts
+                    .filter((p) => p.number !== builtinRebuses.lydia.finaleNumber)
+                    .map((p) => (
+                      <option key={p.number} value={p.number}>
+                        {p.symbol} {p.title}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="card stack">
         <h2>🧪 Test en post</h2>

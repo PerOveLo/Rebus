@@ -21,10 +21,12 @@ export function StartScreen() {
 
   const rebusOptions = useMemo(
     () =>
-      (Object.keys(builtinRebuses) as BuiltinRebusId[]).map((id) => ({
-        id,
-        label: `${builtinRebuses[id].map.homeEmoji} ${builtinRebuses[id].shortName}`,
-      })),
+      (Object.keys(builtinRebuses) as BuiltinRebusId[])
+        .filter((id) => id !== 'standard')
+        .map((id) => ({
+          id,
+          label: `${builtinRebuses[id].map.homeEmoji} ${builtinRebuses[id].shortName}`,
+        })),
     [],
   );
 
@@ -42,6 +44,9 @@ export function StartScreen() {
       .map((n) => n.trim())
       .filter(Boolean)
       .map((n) => ({ id: uid(), name: n, isAdult: false }));
+    const roadGames = Object.fromEntries(
+      (cfg.roadSlots ?? []).filter((s) => s.default > 0).map((s) => [s.before, s.default]),
+    );
     const payload: TeamLinkPayload = {
       v: 1,
       kind: 'team',
@@ -50,6 +55,7 @@ export function StartScreen() {
       order: [...cfg.posts.map((p) => p.number)],
       finalCode: cfg.defaultFinalCode,
       builtin: rebusId !== 'standard' ? rebusId : undefined,
+      roadGames: Object.keys(roadGames).length > 0 ? roadGames : undefined,
     };
     teamStore.set({
       setup: payload,

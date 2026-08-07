@@ -232,6 +232,14 @@ input:focus, textarea:focus, select:focus {
   100% { transform: translateX(125vw) translateY(0) rotate(0deg); }
 }
 
+/* Bilde på en post (instruksjonsbilde) */
+.post-image {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
 /* Romnavn på bildekartet */
 .map-label {
   position: absolute;

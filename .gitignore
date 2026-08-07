@@ -6,3 +6,6 @@ dev-dist
 # dekodes fra *.b64 av scripts/decode-assets.mjs
 public/lydia-kart.jpg
 public/fuglevikkleiva-kart.jpg
+public/post-ute-3.jpg
+public/post-ute-5.jpg
+public/post-ute-6.jpg

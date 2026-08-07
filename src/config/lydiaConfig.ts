@@ -21,7 +21,7 @@ const FAMILY_EVENTS = [
 export const lydiaConfig: BuiltinRebusConfig = {
   id: 'lydia',
   eventName: 'Lydias 6-årsdag – Den store familierebusen',
-  shortName: 'Lydias bursdagsrebus',
+  shortName: 'Bursdagsrebus inne (reserve)',
 
   home: {
     kicker: 'LYDIA BLIR 6 ÅR',

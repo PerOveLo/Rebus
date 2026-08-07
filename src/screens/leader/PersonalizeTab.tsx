@@ -1,8 +1,20 @@
 import { useState } from 'react';
 import { builtinRebuses } from '../../config/rebuses';
+import { leaderBuiltinId, leaderCustomRebus, leaderPosts, postImageKey } from '../../services/personalize';
 import { leaderStore, teamStore } from '../../services/storage';
 import { CUSTOM_POST_COUNTS, generateFromTemplate, generateWithClaude } from '../../services/rebusBuilder';
 import type { BuiltinRebusId, RebusAnswers } from '../../types';
+
+// Skaler ned og lagre opplastet postbilde lokalt (maks ~1200px, JPEG).
+async function fileToDataUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.8);
+}
 
 const API_KEY_STORAGE = 'skylleviga:anthropic-key';
 
@@ -101,10 +113,35 @@ export function PersonalizeTab() {
 
   const filled = answers.place.trim() && answers.people.trim();
 
-  const builtinChoices = (Object.keys(builtinRebuses) as BuiltinRebusId[]).map((id) => ({
-    id,
-    cfg: builtinRebuses[id],
-  }));
+  const builtinChoices = (Object.keys(builtinRebuses) as BuiltinRebusId[])
+    .filter((id) => id !== 'standard')
+    .map((id) => ({
+      id,
+      cfg: builtinRebuses[id],
+    }));
+
+  // --- Postbilder: eget bilde per post, lagret lokalt på denne telefonen ---
+  const [imgVersion, setImgVersion] = useState(0);
+  const [imgError, setImgError] = useState<string | null>(null);
+  const imageRebusId = leaderCustomRebus(state) ? 'custom' : leaderBuiltinId(state);
+  const imagePosts = leaderPosts(state);
+
+  async function uploadPostImage(postNumber: number, file: File | null) {
+    if (!file) return;
+    setImgError(null);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      localStorage.setItem(postImageKey(imageRebusId, postNumber), dataUrl);
+      setImgVersion((v) => v + 1);
+    } catch {
+      setImgError('Klarte ikke å lagre bildet. Prøv et mindre JPG/PNG-bilde.');
+    }
+  }
+
+  function removePostImage(postNumber: number) {
+    localStorage.removeItem(postImageKey(imageRebusId, postNumber));
+    setImgVersion((v) => v + 1);
+  }
 
   async function generate(useAi: boolean) {
     setError(null);
@@ -172,6 +209,51 @@ export function PersonalizeTab() {
             <span className="small muted">Egen generert rebus · {custom.posts.length} poster</span>
           </button>
         )}
+      </div>
+
+      <div className="card stack">
+        <h2>🖼️ Postbilder</h2>
+        <p className="small muted">
+          Bildene som følger med rebusen vises hos alle lag. Laster du opp et eget bilde her,
+          vises det kun på denne telefonen – fint for å endre fortløpende når du selv leder.
+        </p>
+        {imagePosts.map((p) => {
+          const own = imgVersion >= 0 ? localStorage.getItem(postImageKey(imageRebusId, p.number)) : null;
+          const src = own ?? (p.image ? `${import.meta.env.BASE_URL}${p.image}` : null);
+          return (
+            <div key={p.number} className="stack" style={{ gap: 4 }}>
+              <div className="row" style={{ alignItems: 'center' }}>
+                <span className="small" style={{ flex: 1 }}>
+                  <strong>{p.number}.</strong> {p.symbol} {p.title}
+                  {own ? ' · eget bilde' : p.image ? ' · innebygd bilde' : ''}
+                </span>
+                {src && (
+                  <img
+                    src={src}
+                    alt=""
+                    style={{ width: 64, height: 44, objectFit: 'cover', borderRadius: 8 }}
+                  />
+                )}
+                {own && (
+                  <button
+                    className="btn btn-small btn-ghost"
+                    onClick={() => removePostImage(p.number)}
+                    aria-label={`Fjern eget bilde for post ${p.number}`}
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                aria-label={`Last opp bilde til post ${p.number}`}
+                onChange={(e) => uploadPostImage(p.number, e.target.files?.[0] ?? null)}
+              />
+            </div>
+          );
+        })}
+        {imgError && <p className="small" style={{ color: 'var(--coral-dark)' }}>{imgError}</p>}
       </div>
 
       <div className="card stack">
@@ -269,8 +351,8 @@ export function PersonalizeTab() {
               Bruk denne rebusen 🚀
             </button>
           ) : (
-            <button className="btn btn-ghost" onClick={() => selectRebus('standard')}>
-              Bytt tilbake til Skylleviga-rebusen
+            <button className="btn btn-ghost" onClick={() => selectRebus('ute')}>
+              Bytt tilbake til bursdagsrebusen
             </button>
           )}
           {!confirmDelete ? (

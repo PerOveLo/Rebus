@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { builtinRebuses } from '../config/rebuses';
 import { activeConfig, activeCustomRebus, activePosts, findActivePost, getActivePost } from '../services/personalize';
 import { MapView, directionDeg, distanceLabel } from '../components/MapView';
 import { GeoMap } from '../components/GeoMap';
@@ -131,6 +132,13 @@ export function PlayScreen() {
     );
   }
 
+  // Underveis-spill på vei mot neste post (spilles én gang).
+  const roadGameNumber = progress.setup.roadGames?.[currentNum];
+  const roadGamePost =
+    roadGameNumber != null && progress.roadResults?.[currentNum] == null
+      ? builtinRebuses.lydia.posts.find((p) => p.number === roadGameNumber)
+      : undefined;
+
   // Retning og avstand
   let distanceText: string;
   let arrow: { deg: number; label: string } | null = null;
@@ -254,6 +262,18 @@ export function PlayScreen() {
           </div>
         </div>
         <p style={{ fontStyle: 'italic' }}>«{currentPost.clue}»</p>
+        {roadGamePost && (
+          <div className="card card-soft stack" style={{ border: '2px dashed var(--sun, #ffc94d)' }}>
+            <strong>🎒 Oppdrag på veien!</strong>
+            <p className="small" style={{ margin: 0 }}>
+              Mens dere går mot post {currentNum}: spill{' '}
+              <strong>{roadGamePost.symbol} {roadGamePost.title}</strong> – det gir bonuspoeng!
+            </p>
+            <button className="btn btn-sun" onClick={() => navigate(`/road/${currentNum}`)}>
+              Start underveis-spillet 🎮
+            </button>
+          </div>
+        )}
         {arrived && (
           <p className="small center" style={{ color: 'var(--ok)', fontWeight: 700 }} aria-live="polite">
             🎉 GPS-en mener dere er fremme!

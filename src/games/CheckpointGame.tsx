@@ -14,9 +14,8 @@ export function CheckpointGame({ post, onComplete }: GameProps) {
   const doneRef = useRef(false);
 
   return (
-    <div className="stack center">
-      <span className="big-emoji" aria-hidden="true">{post.symbol}</span>
-      <p className="muted">
+    <div className="stack">
+      <p style={{ whiteSpace: 'pre-line', margin: 0 }}>
         {data.prompt ?? 'Den voksne på laget leser oppgaven – løs den sammen!'}
       </p>
       <button

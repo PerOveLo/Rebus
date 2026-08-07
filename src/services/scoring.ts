@@ -3,10 +3,12 @@ import { findActivePost } from './personalize';
 import type { BuiltinRebusConfig, Category, TeamProgress, TeamResultPayload } from '../types';
 
 export function totalScore(progress: TeamProgress): number {
-  return Object.values(progress.results).reduce(
+  const posts = Object.values(progress.results).reduce(
     (sum, r) => sum + r.mainScore + r.teamScore + r.bonusScore,
     0,
   );
+  const road = Object.values(progress.roadResults ?? {}).reduce((sum, s) => sum + s, 0);
+  return posts + road;
 }
 
 export function maxPossibleScore(progress: TeamProgress): number {

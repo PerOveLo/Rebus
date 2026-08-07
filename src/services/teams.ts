@@ -1,5 +1,5 @@
 import { gameConfig, isValidCode } from '../config/gameConfig';
-import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderFinaleNumber } from './personalize';
+import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderFinaleNumber, leaderRoadGames } from './personalize';
 import { shortTeamLinkUrl, teamLinkUrl } from './share';
 import { uid } from './storage';
 import type {
@@ -98,6 +98,7 @@ export function bestTeamUrl(state: LeaderState, team: Team, teamIndex: number): 
   const all = cfg.posts.map((p) => p.number).sort((a, b) => a - b);
   const enabled = [...enabledPosts].sort((a, b) => a - b);
   const samePosts = enabled.length === all.length && enabled.every((n, idx) => n === all[idx]);
+  const roadGames = leaderRoadGames(state);
   return shortTeamLinkUrl({
     r: cfg.id,
     n: team.name,
@@ -105,6 +106,7 @@ export function bestTeamUrl(state: LeaderState, team: Team, teamIndex: number): 
     o: order[0],
     f: isValidCode(state.settings.finalCode) ? state.settings.finalCode : cfg.defaultFinalCode,
     p: samePosts ? undefined : enabled,
+    g: Object.keys(roadGames).length > 0 ? roadGames : undefined,
   });
 }
 
@@ -127,6 +129,7 @@ export function buildTeamLink(
     : undefined;
 
   const custom = leaderCustomRebus(state);
+  const roadGames = leaderRoadGames(state);
 
   return {
     v: 1,
@@ -142,5 +145,6 @@ export function buildTeamLink(
     center: geoComplete ? state.geoCenter : undefined,
     custom,
     builtin: !custom && cfg.id !== 'standard' ? cfg.id : undefined,
+    roadGames: Object.keys(roadGames).length > 0 ? roadGames : undefined,
   };
 }
