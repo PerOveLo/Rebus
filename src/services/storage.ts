@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { gameConfig, isValidCode } from '../config/gameConfig';
 import { lydiaConfig } from '../config/lydiaConfig';
+import { uteConfig } from '../config/uteConfig';
 import type { LeaderState, TeamProgress } from '../types';
 
 // Enkel lokal lagring med pub/sub slik at alle skjermer holder seg i sync.
@@ -53,16 +54,16 @@ function createStore<T>(key: string, initial: () => T) {
   return { get, set, update, reset, useStore };
 }
 
-// Lydias bursdagsrebus (plantegningen av huset) er standardrebusen.
+// Uterebusen rundt huset er standardrebusen.
 export function defaultLeaderState(): LeaderState {
   return {
     settings: {
       pin: gameConfig.defaultLeaderPin,
-      finalCode: lydiaConfig.defaultFinalCode,
-      enabledPosts: lydiaConfig.posts.map((p) => p.number),
+      finalCode: uteConfig.defaultFinalCode,
+      enabledPosts: uteConfig.posts.map((p) => p.number),
       rotateStarts: true,
-      teamCount: 2,
-      activeRebus: 'lydia',
+      teamCount: 3,
+      activeRebus: 'ute',
     },
     participants: [],
     teams: [],
@@ -75,27 +76,28 @@ export const leaderStore = createStore<LeaderState>(LEADER_KEY, defaultLeaderSta
 
 export const teamStore = createStore<TeamProgress | null>(TEAM_KEY, () => null);
 
-// Engangsflytt: telefoner med gammelt oppsett flippes til bursdagsrebusen,
-// og gamle genererte lag (som holdt det gamle kartet i live) ryddes bort.
+// Engangsflytt: alle telefoner flippes til uterebusen rundt huset, og
+// gamle test-lag (genererte rebuser og innendørsrebusen) ryddes bort.
 // Kjøres én gang per telefon; etterpå gjelder valget i 🎪 Rebus som før.
-const LYDIA_MIGRATION_KEY = 'skylleviga:lydia-default:v1';
+const UTE_MIGRATION_KEY = 'skylleviga:ute-default:v1';
 try {
-  if (!localStorage.getItem(LYDIA_MIGRATION_KEY)) {
-    localStorage.setItem(LYDIA_MIGRATION_KEY, '1');
+  if (!localStorage.getItem(UTE_MIGRATION_KEY)) {
+    localStorage.setItem(UTE_MIGRATION_KEY, '1');
+    const knownDefaults = [gameConfig.defaultFinalCode, lydiaConfig.defaultFinalCode, uteConfig.defaultFinalCode];
     leaderStore.update((s) => ({
       ...s,
       settings: {
         ...s.settings,
-        activeRebus: 'lydia',
-        enabledPosts: lydiaConfig.posts.map((p) => p.number),
+        activeRebus: 'ute',
+        enabledPosts: uteConfig.posts.map((p) => p.number),
         finalCode:
-          isValidCode(s.settings.finalCode) && s.settings.finalCode !== gameConfig.defaultFinalCode
+          isValidCode(s.settings.finalCode) && !knownDefaults.includes(s.settings.finalCode)
             ? s.settings.finalCode
-            : lydiaConfig.defaultFinalCode,
+            : uteConfig.defaultFinalCode,
       },
     }));
     const team = teamStore.get();
-    if (team?.setup.custom) teamStore.set(null);
+    if (team && (team.setup.custom || team.setup.builtin === 'lydia')) teamStore.set(null);
   }
 } catch {
   // localStorage utilgjengelig – appen fungerer likevel

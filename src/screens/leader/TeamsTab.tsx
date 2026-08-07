@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { leaderConfig, leaderEnabledPosts } from '../../services/personalize';
+import { leaderConfig, leaderEnabledPosts, leaderFinaleNumber } from '../../services/personalize';
 import { leaderStore } from '../../services/storage';
 import { autoSplitTeams, bestTeamUrl, buildPostOrder, randomTeamIcon, randomTeamName } from '../../services/teams';
 import { QRView } from '../../components/QRView';
@@ -204,7 +204,7 @@ export function TeamsTab() {
           </div>
           <p className="small muted" style={{ margin: 0 }}>
             Starter på post{' '}
-            {buildPostOrder(leaderEnabledPosts(state), index, state.settings.rotateStarts)[0]} ·
+            {buildPostOrder(leaderEnabledPosts(state), index, state.settings.rotateStarts, leaderFinaleNumber(state))[0]} ·
             egen lenke og QR for dette laget
           </p>
         </div>

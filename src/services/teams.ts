@@ -1,5 +1,5 @@
 import { gameConfig, isValidCode } from '../config/gameConfig';
-import { leaderConfig, leaderCustomRebus, leaderEnabledPosts } from './personalize';
+import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderFinaleNumber } from './personalize';
 import { shortTeamLinkUrl, teamLinkUrl } from './share';
 import { uid } from './storage';
 import type {
@@ -67,9 +67,13 @@ export function autoSplitTeams(
   return teams;
 }
 
-// Rekkefølge av poster for et lag. Vanlige poster kan roteres, finalen (15) er alltid sist.
-export function buildPostOrder(enabledPosts: number[], teamIndex: number, rotate: boolean): number[] {
-  const finale = 15;
+// Rekkefølge av poster for et lag. Vanlige poster kan roteres, finalen er alltid sist.
+export function buildPostOrder(
+  enabledPosts: number[],
+  teamIndex: number,
+  rotate: boolean,
+  finale = 15,
+): number[] {
   const regular = enabledPosts.filter((n) => n !== finale).sort((a, b) => a - b);
   if (regular.length === 0) return [finale];
   // Spre startpunktene utover ruten slik at lagene ikke står i kø.
@@ -90,7 +94,7 @@ export function bestTeamUrl(state: LeaderState, team: Team, teamIndex: number): 
     !leaderCustomRebus(state) && !geoComplete && Object.keys(state.mapOverrides).length === 0;
   if (!canShort) return teamLinkUrl(buildTeamLink(state, team, teamIndex));
 
-  const order = buildPostOrder(enabledPosts, teamIndex, state.settings.rotateStarts);
+  const order = buildPostOrder(enabledPosts, teamIndex, state.settings.rotateStarts, leaderFinaleNumber(state));
   const all = cfg.posts.map((p) => p.number).sort((a, b) => a - b);
   const enabled = [...enabledPosts].sort((a, b) => a - b);
   const samePosts = enabled.length === all.length && enabled.every((n, idx) => n === all[idx]);
@@ -112,7 +116,7 @@ export function buildTeamLink(
   const cfg = leaderConfig(state);
   const enabledPosts = leaderEnabledPosts(state);
   const overrides: Record<number, MapPos> = state.mapOverrides;
-  const order = buildPostOrder(enabledPosts, teamIndex, state.settings.rotateStarts);
+  const order = buildPostOrder(enabledPosts, teamIndex, state.settings.rotateStarts, leaderFinaleNumber(state));
 
   // GPS-kartet brukes bare når alle aktive poster faktisk er plassert.
   const geoOverrides = state.geoOverrides ?? {};

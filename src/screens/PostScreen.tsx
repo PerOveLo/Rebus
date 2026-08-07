@@ -74,21 +74,62 @@ export function PostScreen() {
     );
   }
 
+  // Poster kan mangle lagoppgave og/eller voksenbonus (f.eks. den enkle
+  // uterebusen) – da hoppes de stegene helt over.
+  const hasTeamTask = post.physicalTask.trim() !== '';
+  const hasBonus = post.adultBonus.trim() !== '' && post.adultBonusJudgeOptions.length > 0;
+
+  // Skriv sluttresultatet for posten og gå til symbol-steget.
+  function completeInto(p: TeamProgress, bonusScore: number): TeamProgress {
+    if (!p.partial) return p;
+    const results = {
+      ...p.results,
+      [postNumber]: {
+        postNumber,
+        mainScore: p.partial.mainScore,
+        teamScore: p.partial.teamScore,
+        bonusScore,
+        hintUsed: p.partial.hintUsed,
+        completedAt: Date.now(),
+      },
+    };
+    const isFinale = post.gameType === 'finale-code';
+    return {
+      ...p,
+      results,
+      collectedSymbols: p.collectedSymbols.includes(post.islandSymbol.id)
+        ? p.collectedSymbols
+        : [...p.collectedSymbols, post.islandSymbol.id],
+      partial: { ...p.partial, stage: STAGE_DONE },
+      finishedAt: isFinale ? Date.now() : p.finishedAt,
+    };
+  }
+
   handleGameDoneRef.current = (result: GameResult) => {
     teamStore.update((p) => {
       if (!p || !p.partial || p.partial.postNumber !== postNumber) return p;
       const penalty = p.partial.hintUsed ? post.points.hintPenalty : 0;
       const mainScore = Math.max(0, Math.min(post.points.main, result.score) - penalty);
-      return {
+      const next = {
         ...p,
         creations: { ...p.creations, ...(result.creations ?? {}) },
-        partial: { ...p.partial, stage: STAGE_TEAM, mainScore },
+        partial: { ...p.partial, mainScore },
       };
+      if (hasTeamTask) return { ...next, partial: { ...next.partial!, stage: STAGE_TEAM } };
+      if (hasBonus) return { ...next, partial: { ...next.partial!, stage: STAGE_BONUS } };
+      return completeInto(next, 0);
     });
   };
 
   function handleTeamDone(scoreRatio: number) {
-    setPartial({ stage: STAGE_BONUS, teamScore: Math.round(post.points.team * scoreRatio) });
+    const teamScore = Math.round(post.points.team * scoreRatio);
+    if (hasBonus) {
+      setPartial({ stage: STAGE_BONUS, teamScore });
+      return;
+    }
+    teamStore.update((p) =>
+      p && p.partial ? completeInto({ ...p, partial: { ...p.partial, teamScore } }, 0) : p,
+    );
   }
 
   function handleBonusDone(judgeIndex: number) {
@@ -96,30 +137,7 @@ export function PostScreen() {
     const bonusScore = [post.points.bonus, Math.round(post.points.bonus * 0.75), Math.round(post.points.bonus * 0.75)][
       Math.min(judgeIndex, 2)
     ];
-    teamStore.update((p) => {
-      if (!p || !p.partial) return p;
-      const results = {
-        ...p.results,
-        [postNumber]: {
-          postNumber,
-          mainScore: p.partial.mainScore,
-          teamScore: p.partial.teamScore,
-          bonusScore,
-          hintUsed: p.partial.hintUsed,
-          completedAt: Date.now(),
-        },
-      };
-      const isFinale = post.gameType === 'finale-code';
-      return {
-        ...p,
-        results,
-        collectedSymbols: p.collectedSymbols.includes(post.islandSymbol.id)
-          ? p.collectedSymbols
-          : [...p.collectedSymbols, post.islandSymbol.id],
-        partial: { ...p.partial, stage: STAGE_DONE },
-        finishedAt: isFinale ? Date.now() : p.finishedAt,
-      };
-    });
+    teamStore.update((p) => (p && p.partial ? completeInto(p, bonusScore) : p));
   }
 
   function goNext() {
@@ -185,15 +203,17 @@ export function PostScreen() {
           {stage === STAGE_GAME && (
             <div className="card stack">
               <Game post={post} onComplete={stableGameDone} />
-              <div className="center">
-                {!hintOpen ? (
-                  <button className="btn btn-small btn-sun" onClick={useHint}>
-                    💡 Hint (−{post.points.hintPenalty} poeng)
-                  </button>
-                ) : (
-                  <div className="card card-soft small pop-in">{post.hint}</div>
-                )}
-              </div>
+              {post.hint.trim() !== '' && (
+                <div className="center">
+                  {!hintOpen ? (
+                    <button className="btn btn-small btn-sun" onClick={useHint}>
+                      {post.points.hintPenalty > 0 ? `💡 Hint (−${post.points.hintPenalty} poeng)` : '💡 Hint'}
+                    </button>
+                  ) : (
+                    <div className="card card-soft small pop-in">{post.hint}</div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

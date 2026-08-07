@@ -184,13 +184,13 @@ export function MapView({
       })}
 
       {/* Festhus/kake ved start/mål */}
-      {positions[15] && (
+      {positions[cfg.finaleNumber] && (
         <span
           aria-hidden="true"
           style={{
             position: 'absolute',
-            left: `${positions[15].x}%`,
-            top: `${positions[15].y - 6}%`,
+            left: `${positions[cfg.finaleNumber].x}%`,
+            top: `${positions[cfg.finaleNumber].y - 6}%`,
             transform: 'translate(-50%, -50%)',
             fontSize: '1.5rem',
             pointerEvents: 'none',

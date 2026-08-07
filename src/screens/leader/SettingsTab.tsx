@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isValidCode } from '../../config/gameConfig';
 import { builtinRebus } from '../../config/rebuses';
-import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderPosts } from '../../services/personalize';
+import { leaderConfig, leaderCustomRebus, leaderEnabledPosts, leaderFinaleNumber, leaderPosts } from '../../services/personalize';
 import { defaultLeaderState, leaderStore, teamStore, uid } from '../../services/storage';
 import type { LeaderState, TeamLinkPayload } from '../../types';
 
@@ -13,6 +13,7 @@ export function SettingsTab() {
   const cfg = leaderConfig(state);
   const posts = leaderPosts(state);
   const isCustom = leaderCustomRebus(state) != null;
+  const finaleNum = leaderFinaleNumber(state);
   const [showJson, setShowJson] = useState(false);
   const [jsonText, setJsonText] = useState('');
   const [jsonMsg, setJsonMsg] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export function SettingsTab() {
   }
 
   function togglePost(num: number) {
-    if (num === 15) return; // finalen er alltid med
+    if (num === finaleNum) return; // finalen er alltid med
     leaderStore.update((s) => {
       const on = s.settings.enabledPosts.includes(num);
       const enabledPosts = on
@@ -100,15 +101,16 @@ export function SettingsTab() {
       ) {
         merged.settings.activeRebus = 'standard';
       }
-      const importedPosts =
-        merged.settings.activeRebus === 'custom' && merged.customRebus
-          ? merged.customRebus.posts
-          : builtinRebus(merged.settings.activeRebus).posts;
+      const isImportedCustom = merged.settings.activeRebus === 'custom' && merged.customRebus;
+      const importedPosts = isImportedCustom
+        ? merged.customRebus!.posts
+        : builtinRebus(merged.settings.activeRebus).posts;
+      const importedFinale = isImportedCustom ? 15 : builtinRebus(merged.settings.activeRebus).finaleNumber;
       const validNumbers = new Set(importedPosts.map((p) => p.number));
       const enabled = Array.isArray(merged.settings.enabledPosts)
         ? merged.settings.enabledPosts.filter((n): n is number => typeof n === 'number' && validNumbers.has(n))
         : defaults.settings.enabledPosts;
-      merged.settings.enabledPosts = (enabled.includes(15) ? enabled : [...enabled, 15]).sort((a, b) => a - b);
+      merged.settings.enabledPosts = (enabled.includes(importedFinale) ? enabled : [...enabled, importedFinale]).sort((a, b) => a - b);
       if (!isValidCode(merged.settings.finalCode)) merged.settings.finalCode = defaults.settings.finalCode;
       if (!isValidCode(merged.settings.pin)) merged.settings.pin = defaults.settings.pin;
       leaderStore.set(merged);
@@ -185,7 +187,7 @@ export function SettingsTab() {
                 className={`chip chip-btn ${on ? 'chip-active' : ''}`}
                 onClick={() => togglePost(p.number)}
                 aria-pressed={on}
-                disabled={p.number === 15}
+                disabled={p.number === finaleNum}
                 title={p.title}
               >
                 {p.number} {p.symbol}

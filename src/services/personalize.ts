@@ -72,7 +72,7 @@ export function activeFinaleSymbolPosts(): number[] {
 export function leaderBuiltinId(state: LeaderState): BuiltinRebusId {
   const id = state.settings.activeRebus;
   if (id === 'custom') return 'standard'; // basisinnhold for egne rebuser
-  return isBuiltinRebusId(id) ? id : 'lydia'; // bursdagsrebusen er standard
+  return isBuiltinRebusId(id) ? id : 'ute'; // uterebusen er standard
 }
 
 export function leaderConfig(state: LeaderState): BuiltinRebusConfig {
@@ -95,4 +95,9 @@ export function leaderEnabledPosts(state: LeaderState): number[] {
   const valid = new Set(leaderPosts(state).map((p) => p.number));
   const filtered = state.settings.enabledPosts.filter((n) => valid.has(n));
   return filtered.length > 0 ? filtered : [...valid];
+}
+
+// Finaleposten (alltid sist i løypa) for spillleders aktive rebus.
+export function leaderFinaleNumber(state: LeaderState): number {
+  return leaderCustomRebus(state) ? 15 : leaderConfig(state).finaleNumber;
 }

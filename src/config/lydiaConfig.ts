@@ -52,6 +52,9 @@ export const lydiaConfig: BuiltinRebusConfig = {
   // Firesifret finalekode – 06 for sjette bursdag, to ganger for hurra.
   defaultFinalCode: '0606',
 
+  // Finaleposten er alltid sist i løypa.
+  finaleNumber: 15,
+
   // Postene som «lyser opp» i finalen og viser hvert sitt siffer.
   finaleSymbolPosts: [1, 4, 6, 8],
 

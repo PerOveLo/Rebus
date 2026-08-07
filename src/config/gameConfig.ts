@@ -48,6 +48,9 @@ export const gameConfig = {
   // Firesifret finalekode. Kan endres av spillleder.
   defaultFinalCode: '2515',
 
+  // Finaleposten er alltid sist i løypa.
+  finaleNumber: 15,
+
   // Hvilke fire poster som «lyser opp» i finalen og viser hvert sitt siffer.
   finaleSymbolPosts: [1, 5, 7, 12],
 

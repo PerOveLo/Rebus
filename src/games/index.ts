@@ -24,6 +24,7 @@ import { FamilyQuizGame } from './FamilyQuizGame';
 import { WhoSaidItGame } from './WhoSaidItGame';
 import { TrueFalseGame } from './TrueFalseGame';
 import { SpeedQuizGame } from './SpeedQuizGame';
+import { CheckpointGame } from './CheckpointGame';
 
 export const games: Record<GameType, ComponentType<GameProps>> = {
   'tunnel-run': TunnelRunGame,
@@ -49,4 +50,5 @@ export const games: Record<GameType, ComponentType<GameProps>> = {
   'who-said-it': WhoSaidItGame,
   'true-false': TrueFalseGame,
   'speed-quiz': SpeedQuizGame,
+  'checkpoint': CheckpointGame,
 };

@@ -14,7 +14,7 @@ export type Category =
 
 // Innebygde rebuser som følger med appen (i motsetning til genererte
 // egenrebuser, som reiser med i laglenken).
-export type BuiltinRebusId = 'standard' | 'lydia';
+export type BuiltinRebusId = 'standard' | 'lydia' | 'ute';
 
 export type GameType =
   | 'tunnel-run'
@@ -39,7 +39,8 @@ export type GameType =
   | 'family-quiz'
   | 'who-said-it'
   | 'true-false'
-  | 'speed-quiz';
+  | 'speed-quiz'
+  | 'checkpoint';
 
 export interface MapPos {
   x: number; // prosent fra venstre (0-100)
@@ -222,6 +223,7 @@ export interface BuiltinRebusConfig {
   symbolsTitle: string; // f.eks. «Øysymboler» / «Bursdagssymboler»
   intro: { story: string; loadingMessages: string[] };
   defaultFinalCode: string;
+  finaleNumber: number; // postnummeret som alltid er sist i løypa
   finaleSymbolPosts: number[];
   shortGamePosts: number[];
   map: {

@@ -56,14 +56,15 @@ function expandShortTeamLink(parsed: ShortTeamLink): TeamLinkPayload | null {
   if (!isBuiltinRebusId(parsed.r)) return null;
   if (typeof parsed.n !== 'string' || parsed.n.trim() === '') return null;
   const cfg = builtinRebus(parsed.r);
+  const finale = cfg.finaleNumber;
   const all = cfg.posts.map((p) => p.number);
   const enabled = Array.isArray(parsed.p)
     ? parsed.p.filter((n) => typeof n === 'number' && all.includes(n))
     : all;
-  const regular = enabled.filter((n) => n !== 15).sort((a, b) => a - b);
+  const regular = enabled.filter((n) => n !== finale).sort((a, b) => a - b);
   if (regular.length === 0) return null;
   const startIdx = Math.max(0, regular.indexOf(parsed.o));
-  const order = [...regular.slice(startIdx), ...regular.slice(0, startIdx), 15];
+  const order = [...regular.slice(startIdx), ...regular.slice(0, startIdx), finale];
   return {
     v: 1,
     kind: 'team',

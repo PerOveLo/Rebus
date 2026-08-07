@@ -1,12 +1,14 @@
 import type { BuiltinRebusConfig, BuiltinRebusId } from '../types';
 import { gameConfig } from './gameConfig';
 import { lydiaConfig } from './lydiaConfig';
+import { uteConfig } from './uteConfig';
 
-// Register over de innebygde rebusene. Skylleviga er alltid standard;
-// nye rebuser legges til her med sin egen config-fil.
+// Register over de innebygde rebusene (rekkefølgen styrer velgerlisten).
+// Nye rebuser legges til her med sin egen config-fil.
 export const builtinRebuses: Record<BuiltinRebusId, BuiltinRebusConfig> = {
-  standard: gameConfig,
+  ute: uteConfig,
   lydia: lydiaConfig,
+  standard: gameConfig,
 };
 
 // Slår opp en innebygd rebus og faller alltid trygt tilbake til standard.

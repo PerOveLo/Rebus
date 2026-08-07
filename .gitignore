@@ -3,5 +3,6 @@ dist
 dev-dist
 *.local
 .DS_Store
-# dekodes fra public/lydia-kart.jpg.b64 av scripts/decode-assets.mjs
+# dekodes fra *.b64 av scripts/decode-assets.mjs
 public/lydia-kart.jpg
+public/fuglevikkleiva-kart.jpg

@@ -87,8 +87,8 @@ export function PersonalizeTab() {
         s.settings.activeRebus === 'custom'
           ? {
               ...s.settings,
-              activeRebus: 'standard',
-              enabledPosts: builtinRebuses.standard.posts.map((p) => p.number),
+              activeRebus: 'ute',
+              enabledPosts: builtinRebuses.ute.posts.map((p) => p.number),
             }
           : s.settings,
     }));
